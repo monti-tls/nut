@@ -1,0 +1,50 @@
+/* This file is part of nut.
+ * 
+ * Copyright (c) 2015, Alexandre Monti
+ * 
+ * nut is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * nut is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with nut.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//! Single-character tokens.
+ 
+DECL_TOKEN_CHAR(COMMA,       ',')
+DECL_TOKEN_CHAR(SEMICOLON,   ';')
+DECL_TOKEN_CHAR(EQUAL,       '=')
+DECL_TOKEN_CHAR(LEFT_PAREN,  '(')
+DECL_TOKEN_CHAR(RIGHT_PAREN, ')')
+DECL_TOKEN_CHAR(LEFT_CURLY,  '{')
+DECL_TOKEN_CHAR(RIGHT_CURLY, '}')
+
+//! Multi-character operators (must have a
+//!   different alphabet than other tokens).
+
+DECL_TOKEN_OP  (LESS,         "<")
+DECL_TOKEN_OP  (GREATER,      ">")
+DECL_TOKEN_OP  (LESS_EQUAL,   "<=")
+DECL_TOKEN_OP  (GEATER_EQUAL, ">=")
+DECL_TOKEN_OP  (PLUS,         "+")
+DECL_TOKEN_OP  (MINUS,        "-")
+DECL_TOKEN_OP  (STAR,         "*")
+DECL_TOKEN_OP  (SLASH,        "/")
+
+//! Keywords.
+
+DECL_TOKEN_KW  (IF,          "if")
+DECL_TOKEN_KW  (ELSE,        "else")
+DECL_TOKEN_KW  (WHILE,       "while")
+DECL_TOKEN_KW  (FOR,         "for")
+DECL_TOKEN_KW  (DO,          "do")
+DECL_TOKEN_KW  (BREAK,       "break")
+DECL_TOKEN_KW  (CONTINUE,    "continue")
+DECL_TOKEN_KW  (RETURN,      "return")
