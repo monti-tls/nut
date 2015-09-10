@@ -26,17 +26,13 @@ namespace pr
         std::string name;
     };
     
-    #define DECL_ENTRY(name) { TOKEN_ ## name, #name },
-    
-    #define DECL_TOKEN_CHAR(name, char)   DECL_ENTRY(name)
-    #define DECL_TOKEN_OP(name, str)      DECL_ENTRY(name)
-    #define DECL_TOKEN_KW(name, str)      DECL_ENTRY(name)
+    #define DECL_TOKEN(name)              { TOKEN_ ## name, #name },
+    #define DECL_TOKEN_CHAR(name, char)   DECL_TOKEN(name)
+    #define DECL_TOKEN_OP(name, str)      DECL_TOKEN(name)
+    #define DECL_TOKEN_KW(name, str)      DECL_TOKEN(name)
     
     static named_token named_tokens[] =
     {
-        DECL_ENTRY(EOF)
-        DECL_ENTRY(BAD)
-        
         #include "nut/pr_tokens.inc"
     };
     
@@ -45,8 +41,7 @@ namespace pr
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
-
-    #undef DECL_ENTRY
+    #undef DECL_TOKEN
     
     //! Find a named token by type (e.g. TOKEN_* constants).
     static named_token* find_named_token(int type)

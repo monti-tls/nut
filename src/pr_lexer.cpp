@@ -17,6 +17,7 @@
  */
 
 #include "nut/pr_lexer.h"
+#include <cctype> // std::isdigit & cie
 
 namespace pr
 {   
@@ -30,10 +31,10 @@ namespace pr
         char name;
     };
     
-    #define DECL_TOKEN_KW(name, str)
+    #define DECL_TOKEN(name)
+    #define DECL_TOKEN_CHAR(name, char) { TOKEN_ ## name, char },
     #define DECL_TOKEN_OP(name, str)
-    #define DECL_TOKEN_CHAR(name, char) \
-        { TOKEN_ ## name, char },
+    #define DECL_TOKEN_KW(name, str)
     
     static lexer_char lexer_chars[] =
     {
@@ -42,9 +43,10 @@ namespace pr
     
     static int lexer_chars_size = sizeof(lexer_chars) / sizeof(lexer_char);
     
-    #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_KW
+    #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
+    #undef DECL_TOKEN
     
     //! Search a single-char token by name.
     //! Return 0 if not found.
@@ -68,10 +70,10 @@ namespace pr
         std::string name;
     };
     
-    #define DECL_TOKEN_KW(name, str)
+    #define DECL_TOKEN(name)
     #define DECL_TOKEN_CHAR(name, char)
-    #define DECL_TOKEN_OP(name, str)\
-        { TOKEN_ ## name, str },
+    #define DECL_TOKEN_OP(name, str)    { TOKEN_ ## name, str },
+    #define DECL_TOKEN_KW(name, str)
     
     static lexer_op lexer_ops[]
     {
@@ -80,9 +82,10 @@ namespace pr
     
     static int lexer_ops_size = sizeof(lexer_ops) / sizeof(lexer_op);
     
+    #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
-    #undef DECL_TOKEN_KW
+    #undef DECL_TOKEN
     
     //! Returns whether or not the character is present in the operators alphabet.
     //! The alphabet is built the first time this function is called.
@@ -130,10 +133,10 @@ namespace pr
         std::string name;
     };
     
+    #define DECL_TOKEN(name)
     #define DECL_TOKEN_CHAR(name, char)
     #define DECL_TOKEN_OP(name, str)
-    #define DECL_TOKEN_KW(name, str) \
-        { TOKEN_ ## name, str },
+    #define DECL_TOKEN_KW(name, str)    { TOKEN_ ## name, str },
         
     static lexer_keyword lexer_keywords[] =
     {
@@ -146,6 +149,7 @@ namespace pr
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
+    #undef DECL_TOKEN
     
     //! Search a keyword by name.
     //! Returns 0 if not found.
@@ -245,15 +249,79 @@ namespace pr
             tok.type = TOKEN_EOF;
         else
         {
-            // Single-char tokens
-            lexer_char* cr = lexer_find_char(lex.next_char);
-            if (cr)
+            //! Each rule starts with :
+            //!   if (!eaten && start_char_constraint)
+            //! Upon success, a rule will set eaten to true.
+            //! This allows multiple rules to start with the same character.
+            bool eaten = false;
+            
+            //! Numeric literals family :
+            //!   - integers
+            //!   - floatings
+            //! Note that we only support positive numeric literals here,
+            //!   to avoid a conflict with the unary minus operator.
+            if (!eaten && (
+                std::isdigit(lex.next_char) ||
+                lex.next_char == '.'))
             {
+                std::string value = "";
+                bool ok = true;
+                
+                // If we start with a dot , and the second character is not a digit
+                //   we must not continue further and let other rules process the character.
+                if (!std::isdigit(lex.next_char))
+                {
+                    // Here we peek for the second character to be extracted
+                    //   using std::istream::peek, to avoid lexer_get'ing it
+                    //   and then std::istream::putback.
+                    // Note we can't look further ahead that this !
+                    ok = std::isdigit(lex.in.peek());
+                    
+                    // Get the dot.
+                    if (ok)
+                        value += lexer_get_char(lex);
+                }
+                
+                if (ok)
+                {
+                    while (std::isdigit(lex.next_char) || lex.next_char == '.')
+                    {
+                        // Multiple dots are not allowed in numeric literals !
+                        if (lex.next_char == '.' && value.find('.') != std::string::npos)
+                        {
+                            ok = false;
+                            break;
+                        }
+                        
+                        value += lexer_get_char(lex);
+                    }
+                    
+                    tok.value = value;
+                    if (ok)
+                    {
+                        eaten = true;
+                        
+                        if (value.find('.') != std::string::npos)
+                            tok.type = TOKEN_FLOATING;
+                        else
+                            tok.type = TOKEN_INTEGER;
+                    }
+                }
+            }
+            
+            //! Single-char tokens.
+            lexer_char* cr = lexer_find_char(lex.next_char);
+            if (!eaten && cr)
+            {
+                eaten = true;
+                
                 lexer_get_char(lex);
                 tok.type = cr->type;
             }
-            // Operators
-            else if (lexer_is_in_op_alphabet(lex.next_char))
+            
+            //! Operators.
+            if (!eaten && (
+                lexer_is_in_op_alphabet(lex.next_char)))
             {
                 std::string name = "";
                 
@@ -267,11 +335,18 @@ namespace pr
                 
                 lexer_op* op = lexer_find_op(name);
                 if (op)
+                {
+                    eaten = true;
                     tok.type = op->type;
+                }
             }
-            // Identifiers :
-            //   - keywords from DECL_TOKEN_KW
-            else if (std::isalpha(lex.next_char) || lex.next_char == '_')
+            
+            //! Identifiers family (listed higher priority first) :
+            //!   - keywords from DECL_TOKEN_KW
+            //!   - identifiers
+            if (!eaten && (
+                std::isalpha(lex.next_char) ||
+                lex.next_char == '_'))
             {
                std::string name = "";
                
@@ -283,12 +358,16 @@ namespace pr
                // Save its name
                tok.value = name;
                
+               // Is is a keyword ?
                lexer_keyword* kw = lexer_find_keyword(name);
-               // others ...
                
+               // Set token's type accordingly
                if (kw)
                    tok.type = kw->type;
-               // else if (other) ...
+               else
+                   tok.type = TOKEN_IDENTIFIER;
+               
+               eaten = true;
             }
         }
         
@@ -317,12 +396,12 @@ namespace pr
         lexer_init(lex);
     }
     
-    token const& lexer_seek(lexer& lex)
+    token const& lexer_peek(lexer& lex)
     {
         return lex.next_token;
     }
     
-    int lexer_seekt(lexer& lex)
+    int lexer_peekt(lexer& lex)
     {
         return lex.next_token.type;
     }

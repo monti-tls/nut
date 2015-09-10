@@ -20,14 +20,16 @@
  
 DECL_TOKEN_CHAR(COMMA,       ',')
 DECL_TOKEN_CHAR(SEMICOLON,   ';')
+DECL_TOKEN_CHAR(DOT,         '.')
 DECL_TOKEN_CHAR(EQUAL,       '=')
 DECL_TOKEN_CHAR(LEFT_PAREN,  '(')
 DECL_TOKEN_CHAR(RIGHT_PAREN, ')')
 DECL_TOKEN_CHAR(LEFT_CURLY,  '{')
 DECL_TOKEN_CHAR(RIGHT_CURLY, '}')
 
-//! Multi-character operators (must have a
-//!   different alphabet than other tokens).
+//! Multi-character operators.
+//! Alphabet : any character contained below.
+//! Must not overlap with other alphabets !
 
 DECL_TOKEN_OP  (LESS,         "<")
 DECL_TOKEN_OP  (GREATER,      ">")
@@ -39,6 +41,7 @@ DECL_TOKEN_OP  (STAR,         "*")
 DECL_TOKEN_OP  (SLASH,        "/")
 
 //! Keywords.
+//! Alphabet : alphanumeric and underscore, no number for the first character.
 
 DECL_TOKEN_KW  (IF,          "if")
 DECL_TOKEN_KW  (ELSE,        "else")
@@ -48,3 +51,12 @@ DECL_TOKEN_KW  (DO,          "do")
 DECL_TOKEN_KW  (BREAK,       "break")
 DECL_TOKEN_KW  (CONTINUE,    "continue")
 DECL_TOKEN_KW  (RETURN,      "return")
+
+//! Ordinary tokens, with hard-coded rules in the lexer.
+//! They are here for automatic name generation and consistency only.
+
+DECL_TOKEN     (EOF)
+DECL_TOKEN     (BAD)
+DECL_TOKEN     (IDENTIFIER)
+DECL_TOKEN     (INTEGER)
+DECL_TOKEN     (FLOATING)

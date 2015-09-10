@@ -44,11 +44,11 @@ namespace pr
     //! Reset a lexer to the beginning of the stream.
     void lexer_reset(lexer& lex);
     
-    //! Seek for the next token ahead in the stream.
-    token const& lexer_seek(lexer& lex);
+    //! Peek for the next token ahead in the stream.
+    token const& lexer_peek(lexer& lex);
     
-    //! Seek for the next token's type ahead in the stream.
-    int lexer_seekt(lexer& lex);
+    //! Peek for the next token's type ahead in the stream.
+    int lexer_peekt(lexer& lex);
     
     //! Get the next token from the inptu stream.
     token lexer_get(lexer& lex);

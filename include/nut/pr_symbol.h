@@ -16,42 +16,25 @@
  * along with nut.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NUT_PR_TOKEN_H
-#define NUT_PR_TOKEN_H
+#ifndef NUT_PR_SYMBOL_H
+#define NUT_PR_SYMBOL_H
 
 #include <string>
-#include <iostream>
 
 namespace pr
 {
-    #define DECL_TOKEN(name)            TOKEN_ ## name,
-    #define DECL_TOKEN_CHAR(name, char) DECL_TOKEN(name)
-    #define DECL_TOKEN_OP(name, str)    DECL_TOKEN(name)
-    #define DECL_TOKEN_KW(name, str)    DECL_TOKEN(name)
-    
     enum
     {
-        #include "nut/pr_tokens.inc"
+        SYM_FLAG_TYPE     = 0x0001,
+        SYM_FLAG_VARIABLE = 0x0002,
+        SYM_FLAG_FUNCTION = 0x0004
     };
     
-    #undef DECL_TOKEN_KW
-    #undef DECL_TOKEN_OP
-    #undef DECL_TOKEN_CHAR
-    #undef DECL_TOKEN
-    
-    struct token_info
+    struct symbol
     {
-        int line, column;
+        unsigned int flags;
+        std::string name;
     };
-    
-    struct token
-    {
-        int type;
-        std::string value;
-        token_info info;
-    };
-    
-    void token_pretty_print(token const& tok, std::ostream& os = std::cout);
 }
 
-#endif // NUT_PR_TOKEN_H
+#endif // NUT_PR_SYMBOL_H

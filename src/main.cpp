@@ -26,9 +26,7 @@ int main()
     using namespace pr;
     
     std::string str =
-    ",(,} if else;\n"
-    "   # ffdsg;dsg;; if\n"
-    "for do < <= / * */";
+    "3.35 <= ..5";
     
     std::istringstream ss;
     ss.str(str);
