@@ -22,32 +22,41 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 
 int main()
 {
     using namespace pr;
     
-    std::ifstream fs("scratch/test.nut");
-    
-    context ctx = context_create();
-    lexer lex = lexer_create(fs, ctx);
-    parser par = parser_create(lex, ctx);
-    
-    /*for (;;)
+    try
     {
-        token tok = lexer_get(lex);
-        token_pretty_print(tok, std::cout);
-        std::cout << std::endl;
+        std::ifstream fs("scratch/test.nut");
+    
+        context ctx = context_create();
+        lexer lex = lexer_create(fs, ctx);
+        parser par = parser_create(lex, ctx);
         
-        if (tok.type == TOKEN_BAD || tok.type == TOKEN_EOF)
-            break;
-    }*/
-    
-    parser_parse_program(par);
-    
-    parser_free(par);
-    lexer_free(lex);
-    context_free(ctx);
+        /*for (;;)
+        {
+            token tok = lexer_get(lex);
+            token_pretty_print(tok, std::cout);
+            std::cout << std::endl;
+            
+            if (tok.type == TOKEN_BAD || tok.type == TOKEN_EOF)
+                break;
+        }*/
+        
+        parser_parse_program(par);
+        
+        parser_free(par);
+        lexer_free(lex);
+        context_free(ctx);
+    }
+    catch (std::exception const& exc)
+    {
+        std::cerr << exc.what() << std::endl;
+        return -1;
+    }
     
     return 0;
 }

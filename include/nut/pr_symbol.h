@@ -19,6 +19,7 @@
 #ifndef NUT_PR_SYMBOL_H
 #define NUT_PR_SYMBOL_H
 
+#include "nut/pr_token.h"
 #include <string>
 
 namespace pr
@@ -36,6 +37,7 @@ namespace pr
     {
         unsigned int flags;
         std::string name;
+        token_info info;
     };
 }
 

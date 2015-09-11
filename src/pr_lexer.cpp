@@ -36,7 +36,6 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char) { TOKEN_ ## name, char },
     #define DECL_TOKEN_OP(name, str)
     #define DECL_TOKEN_KW(name, str)
-    #define DECL_TOKEN_SCOPE(name, flag)
     
     static char_token char_tokens[] =
     {
@@ -45,7 +44,6 @@ namespace pr
     
     static int char_tokens_size = sizeof(char_tokens) / sizeof(char_token);
     
-    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -77,7 +75,6 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char)
     #define DECL_TOKEN_OP(name, str)    { TOKEN_ ## name, str },
     #define DECL_TOKEN_KW(name, str)
-    #define DECL_TOKEN_SCOPE(name, flag)
     
     static op_token op_tokens[]
     {
@@ -86,7 +83,6 @@ namespace pr
     
     static int op_tokens_size = sizeof(op_tokens) / sizeof(op_token);
     
-    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -142,7 +138,6 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char)
     #define DECL_TOKEN_OP(name, str)
     #define DECL_TOKEN_KW(name, str)    { TOKEN_ ## name, str },
-    #define DECL_TOKEN_SCOPE(name, flag)
         
     static keyword_token keyword_tokens[] =
     {
@@ -152,7 +147,6 @@ namespace pr
     static int keyword_tokens_size = sizeof(keyword_tokens)
                                    / sizeof(keyword_token);
     
-    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -166,47 +160,6 @@ namespace pr
             if (keyword_tokens[i].name == name)
                 return keyword_tokens + i;
             
-        return 0;
-    }
-    
-    /*************************************************************/
-    /*** Scope-dependent tokens, defined with DECL_TOKEN_SCOPE ***/
-    /*** Identifier-based.                                     ***/
-    /*************************************************************/
-    
-    struct scoped_token
-    {
-        int type;
-        int flag;
-    };
-    
-    #define DECL_TOKEN(name)
-    #define DECL_TOKEN_CHAR(name, char)
-    #define DECL_TOKEN_OP(name, str)
-    #define DECL_TOKEN_KW(name, str)
-    #define DECL_TOKEN_SCOPE(name, flag) { TOKEN_ ## name, SYM_FLAG_ ## flag },
-        
-    static scoped_token scoped_tokens[] =
-    {
-        #include "nut/pr_tokens.inc"
-    };
-    
-    static int scoped_tokens_size = sizeof(scoped_tokens)
-                                  / sizeof(scoped_token);
-    
-    #undef DECL_TOKEN_SCOPE
-    #undef DECL_TOKEN_KW
-    #undef DECL_TOKEN_OP
-    #undef DECL_TOKEN_CHAR
-    #undef DECL_TOKEN
-    
-    //! Find a scoped token by flag (i.e. from a symbol.flag).
-    static scoped_token* find_scoped_token(int flag)
-    {
-        for (int i = 0; i < scoped_tokens_size; ++i)
-            if (scoped_tokens[i].flag & flag)
-                return scoped_tokens + i;
-        
         return 0;
     }
     
@@ -391,7 +344,6 @@ namespace pr
             
             //! Identifiers family (listed higher priority first) :
             //!   - keywords from DECL_TOKEN_KW
-            //!   - scoped tokens from DECL_TOKEN_SCOPE
             //!   - identifiers
             if (!eaten && (
                 std::isalpha(lex.next_char) ||
@@ -413,21 +365,6 @@ namespace pr
                {
                    tok.type = kw->type;
                    eaten = true;
-               }
-               
-               //! Is this a scoped token ?
-               if (!eaten)
-               {
-                   symbol* sym = scope_find(lex.ctx.scp, name);
-                   if (sym)
-                   {
-                       scoped_token* stk = find_scoped_token(sym->flags);
-                       if (stk)
-                       {
-                           tok.type = stk->type;
-                           eaten = true;
-                       }
-                   }
                }
                
                //! Otherwise, it is an identifier.

@@ -52,14 +52,6 @@ DECL_TOKEN_KW   (BREAK,         "break")
 DECL_TOKEN_KW   (CONTINUE,      "continue")
 DECL_TOKEN_KW   (RETURN,        "return")
 
-//! Scope tokens.
-//! Those have an identifier alphabet (and share it with keywords and identifiers).
-//! They are searched in the current scope and matched against the given flag (SYM_FLAG_*).
-
-DECL_TOKEN_SCOPE(TYPE_NAME,     TYPE)
-DECL_TOKEN_SCOPE(VARIABLE_NAME, VARIABLE)
-DECL_TOKEN_SCOPE(FUNCTION_NAME, FUNCTION)
-
 //! Ordinary tokens, with hard-coded rules in the lexer.
 //! They are here for automatic name generation and consistency only.
 
