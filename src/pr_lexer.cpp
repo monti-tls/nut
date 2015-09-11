@@ -17,6 +17,7 @@
  */
 
 #include "nut/pr_lexer.h"
+#include "nut/pr_symbol.h"
 #include <cctype> // std::isdigit & cie
 
 namespace pr
@@ -25,7 +26,7 @@ namespace pr
     /*** Single-char tokens, declared with DECL_TOKEN_CHAR ***/
     /*********************************************************/
     
-    struct lexer_char
+    struct char_token
     {
         int type;
         char name;
@@ -35,14 +36,16 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char) { TOKEN_ ## name, char },
     #define DECL_TOKEN_OP(name, str)
     #define DECL_TOKEN_KW(name, str)
+    #define DECL_TOKEN_SCOPE(name, flag)
     
-    static lexer_char lexer_chars[] =
+    static char_token char_tokens[] =
     {
         #include "nut/pr_tokens.inc"
     };
     
-    static int lexer_chars_size = sizeof(lexer_chars) / sizeof(lexer_char);
+    static int char_tokens_size = sizeof(char_tokens) / sizeof(char_token);
     
+    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -50,11 +53,11 @@ namespace pr
     
     //! Search a single-char token by name.
     //! Return 0 if not found.
-    static lexer_char* lexer_find_char(char name)
+    static char_token* find_char_token(char name)
     {
-        for (int i = 0; i < lexer_chars_size; ++i)
-            if (lexer_chars[i].name == name)
-                return lexer_chars + i;
+        for (int i = 0; i < char_tokens_size; ++i)
+            if (char_tokens[i].name == name)
+                return char_tokens + i;
         
         return 0;
     }
@@ -64,7 +67,7 @@ namespace pr
     /*** A special alphabet is built for those.      ***/
     /***************************************************/
     
-    struct lexer_op
+    struct op_token
     {
         int type;
         std::string name;
@@ -74,14 +77,16 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char)
     #define DECL_TOKEN_OP(name, str)    { TOKEN_ ## name, str },
     #define DECL_TOKEN_KW(name, str)
+    #define DECL_TOKEN_SCOPE(name, flag)
     
-    static lexer_op lexer_ops[]
+    static op_token op_tokens[]
     {
         #include "nut/pr_tokens.inc"
     };
     
-    static int lexer_ops_size = sizeof(lexer_ops) / sizeof(lexer_op);
+    static int op_tokens_size = sizeof(op_tokens) / sizeof(op_token);
     
+    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -89,7 +94,7 @@ namespace pr
     
     //! Returns whether or not the character is present in the operators alphabet.
     //! The alphabet is built the first time this function is called.
-    static bool lexer_is_in_op_alphabet(int ch)
+    static bool is_char_in_op_alphabet(int ch)
     {
         static std::string alphabet = "";
         
@@ -98,9 +103,9 @@ namespace pr
         // std::string::find returns std::string::npos if not found.
         if (!alphabet.size())
         {
-            for (int i = 0; i < lexer_ops_size; ++i)
+            for (int i = 0; i < op_tokens_size; ++i)
             {
-                lexer_op& op = lexer_ops[i];
+                op_token& op = op_tokens[i];
                 
                 for (unsigned int j = 0; j < op.name.size(); ++j)
                     if (alphabet.find(op.name[j]) == std::string::npos)
@@ -113,11 +118,11 @@ namespace pr
     
     //! Find an operator by name.
     //! Returns 0 if not found.
-    static lexer_op* lexer_find_op(std::string const& name)
+    static op_token* find_op_token(std::string const& name)
     {
-        for (int i = 0; i < lexer_ops_size; ++i)
-            if (lexer_ops[i].name == name)
-                return lexer_ops + i;
+        for (int i = 0; i < op_tokens_size; ++i)
+            if (op_tokens[i].name == name)
+                return op_tokens + i;
         
         return 0;
     }
@@ -127,7 +132,7 @@ namespace pr
     /*** Those are identifier-based.                ***/
     /**************************************************/
     
-    struct lexer_keyword
+    struct keyword_token
     {
         int type;
         std::string name;
@@ -137,15 +142,17 @@ namespace pr
     #define DECL_TOKEN_CHAR(name, char)
     #define DECL_TOKEN_OP(name, str)
     #define DECL_TOKEN_KW(name, str)    { TOKEN_ ## name, str },
+    #define DECL_TOKEN_SCOPE(name, flag)
         
-    static lexer_keyword lexer_keywords[] =
+    static keyword_token keyword_tokens[] =
     {
         #include "nut/pr_tokens.inc"
     };
     
-    static int lexer_keywords_size = sizeof(lexer_keywords)
-                                   / sizeof(lexer_keyword);
+    static int keyword_tokens_size = sizeof(keyword_tokens)
+                                   / sizeof(keyword_token);
     
+    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR
@@ -153,12 +160,53 @@ namespace pr
     
     //! Search a keyword by name.
     //! Returns 0 if not found.
-    static lexer_keyword* lexer_find_keyword(std::string const& name)
+    static keyword_token* find_keyword_token(std::string const& name)
     {
-        for (int i = 0; i < lexer_keywords_size; ++i)
-            if (lexer_keywords[i].name == name)
-                return lexer_keywords + i;
+        for (int i = 0; i < keyword_tokens_size; ++i)
+            if (keyword_tokens[i].name == name)
+                return keyword_tokens + i;
             
+        return 0;
+    }
+    
+    /*************************************************************/
+    /*** Scope-dependent tokens, defined with DECL_TOKEN_SCOPE ***/
+    /*** Identifier-based.                                     ***/
+    /*************************************************************/
+    
+    struct scoped_token
+    {
+        int type;
+        int flag;
+    };
+    
+    #define DECL_TOKEN(name)
+    #define DECL_TOKEN_CHAR(name, char)
+    #define DECL_TOKEN_OP(name, str)
+    #define DECL_TOKEN_KW(name, str)
+    #define DECL_TOKEN_SCOPE(name, flag) { TOKEN_ ## name, SYM_FLAG_ ## flag },
+        
+    static scoped_token scoped_tokens[] =
+    {
+        #include "nut/pr_tokens.inc"
+    };
+    
+    static int scoped_tokens_size = sizeof(scoped_tokens)
+                                  / sizeof(scoped_token);
+    
+    #undef DECL_TOKEN_SCOPE
+    #undef DECL_TOKEN_KW
+    #undef DECL_TOKEN_OP
+    #undef DECL_TOKEN_CHAR
+    #undef DECL_TOKEN
+    
+    //! Find a scoped token by flag (i.e. from a symbol.flag).
+    static scoped_token* find_scoped_token(int flag)
+    {
+        for (int i = 0; i < scoped_tokens_size; ++i)
+            if (scoped_tokens[i].flag & flag)
+                return scoped_tokens + i;
+        
         return 0;
     }
     
@@ -310,7 +358,7 @@ namespace pr
             }
             
             //! Single-char tokens.
-            lexer_char* cr = lexer_find_char(lex.next_char);
+            char_token* cr = find_char_token(lex.next_char);
             if (!eaten && cr)
             {
                 eaten = true;
@@ -321,19 +369,19 @@ namespace pr
             
             //! Operators.
             if (!eaten && (
-                lexer_is_in_op_alphabet(lex.next_char)))
+                is_char_in_op_alphabet(lex.next_char)))
             {
                 std::string name = "";
                 
                 // Get the operator
                 do
                     name += lexer_get_char(lex);
-                while (lexer_is_in_op_alphabet(lex.next_char));
+                while (is_char_in_op_alphabet(lex.next_char));
                 
                 // Save its name
                 tok.value = name;
                 
-                lexer_op* op = lexer_find_op(name);
+                op_token* op = find_op_token(name);
                 if (op)
                 {
                     eaten = true;
@@ -343,6 +391,7 @@ namespace pr
             
             //! Identifiers family (listed higher priority first) :
             //!   - keywords from DECL_TOKEN_KW
+            //!   - scoped tokens from DECL_TOKEN_SCOPE
             //!   - identifiers
             if (!eaten && (
                 std::isalpha(lex.next_char) ||
@@ -359,15 +408,34 @@ namespace pr
                tok.value = name;
                
                // Is is a keyword ?
-               lexer_keyword* kw = lexer_find_keyword(name);
-               
-               // Set token's type accordingly
+               keyword_token* kw = find_keyword_token(name);
                if (kw)
+               {
                    tok.type = kw->type;
-               else
-                   tok.type = TOKEN_IDENTIFIER;
+                   eaten = true;
+               }
                
-               eaten = true;
+               //! Is this a scoped token ?
+               if (!eaten)
+               {
+                   symbol* sym = scope_find(lex.ctx.scp, name);
+                   if (sym)
+                   {
+                       scoped_token* stk = find_scoped_token(sym->flags);
+                       if (stk)
+                       {
+                           tok.type = stk->type;
+                           eaten = true;
+                       }
+                   }
+               }
+               
+               //! Otherwise, it is an identifier.
+               if (!eaten)
+               {
+                   tok.type = TOKEN_IDENTIFIER;
+                   eaten = true;
+               }
             }
         }
         
@@ -379,10 +447,12 @@ namespace pr
     /*** Public module API ***/
     /*************************/
     
-    lexer lexer_create(std::istream& in)
+    lexer lexer_create(std::istream& in, context& ctx)
     {
-        lexer lex(in);
+        lexer lex(in, ctx);
+        
         lexer_init(lex);
+        
         return lex;
     }
     

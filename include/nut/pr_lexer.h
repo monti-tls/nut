@@ -20,23 +20,25 @@
 #define NUT_PR_LEXER_H
 
 #include "nut/pr_token.h"
+#include "nut/pr_context.h"
 #include <istream>
 
 namespace pr
 {
     struct lexer
     {
-        lexer(std::istream& in) : in(in) {};
+        lexer(std::istream& in, context& ctx) : in(in), ctx(ctx) {};
         
         std::istream& in;
-        int next_char;
+        context& ctx;
         
+        int next_char;
         token next_token;
         token_info current_info;
     };
     
     //! Create a lexer from an input stream.
-    lexer lexer_create(std::istream& in);
+    lexer lexer_create(std::istream& in, context& ctx);
     
     //! Delete a lexer.
     void lexer_free(lexer& lex);

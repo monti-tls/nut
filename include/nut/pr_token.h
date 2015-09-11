@@ -24,16 +24,18 @@
 
 namespace pr
 {
-    #define DECL_TOKEN(name)            TOKEN_ ## name,
-    #define DECL_TOKEN_CHAR(name, char) DECL_TOKEN(name)
-    #define DECL_TOKEN_OP(name, str)    DECL_TOKEN(name)
-    #define DECL_TOKEN_KW(name, str)    DECL_TOKEN(name)
+    #define DECL_TOKEN(name)             TOKEN_ ## name,
+    #define DECL_TOKEN_CHAR(name, char)  DECL_TOKEN(name)
+    #define DECL_TOKEN_OP(name, str)     DECL_TOKEN(name)
+    #define DECL_TOKEN_KW(name, str)     DECL_TOKEN(name)
+    #define DECL_TOKEN_SCOPE(name, flag) DECL_TOKEN(name)
     
     enum
     {
         #include "nut/pr_tokens.inc"
     };
     
+    #undef DECL_TOKEN_SCOPE
     #undef DECL_TOKEN_KW
     #undef DECL_TOKEN_OP
     #undef DECL_TOKEN_CHAR

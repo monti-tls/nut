@@ -16,19 +16,22 @@
  * along with nut.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-argument_list :=
-    (
-        type_specifier IDENTIFIER
-        (COMMA type_specifier IDENTIFIER)*
-    )?
-    ;
+type_specifier       := TYPE_NAME
 
-type_specifier :=
-    TYPE_NAME
-    
-function_declaration :=
-    type_specifier IDENTIFIER LEFT_PAREN argument_list RIGHT_PAREN
-    LEFT_BRACE
-    statement*
-    RIGHT_BRACE
-    ;
+expression           :=
+
+declaration_stmt     := type_specifier IDENTIFIER (EQUALS expression)? SEMICOLON
+
+assignment_stmt      := VARIABLE_NAME EQUALS expression SEMICOLON
+
+function_call_stmt   := function_call SEMICOLON
+
+statement            := declaration_stmt
+                      | assignment_stmt
+                      | function_call_stmt
+
+statement_block      := LEFT_CURLY statement* RIGHT_CURLY
+
+function_declaration := type_specifier IDENTIFIER
+                        LEFT_PAREN argument_list RIGHT_PAREN
+                        statement_block

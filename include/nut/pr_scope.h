@@ -57,8 +57,8 @@ namespace pr
     //! Returns the newly created layer.
     scope_layer& scope_push(scope& scp);
     
-    //! Exit the current scope layer (destroying its contents).
-    void scope_pop(scope& scp);
+    //! Exit the current scope layer (returning it).
+    scope_layer scope_pop(scope& scp);
     
     //! Find a symbol in the current scope.
     //! This searches recursively in all layers (from the innermost),
@@ -66,6 +66,9 @@ namespace pr
     //! This does not check for duplicates in the same layer.
     //! Returns 0 if not found anywhere.
     symbol* scope_find(scope& scp, std::string const& name);
+    
+    //! Find a symbol in the innermost layer only.
+    symbol* scope_find_innermost(scope& scp, std::string const& name);
     
     //! Add a new symbol to the current scope layer.
     //! This does not check for duplicates.

@@ -27,7 +27,9 @@ namespace pr
     {
         SYM_FLAG_TYPE     = 0x0001,
         SYM_FLAG_VARIABLE = 0x0002,
-        SYM_FLAG_FUNCTION = 0x0004
+        SYM_FLAG_FUNCTION = 0x0004,
+        
+        SYM_FLAG_BUILTIN  = 0x8000
     };
     
     struct symbol

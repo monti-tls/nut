@@ -59,13 +59,16 @@ namespace pr
         return scp.layers[++scp.top];
     }
     
-    void scope_pop(scope& scp)
+    scope_layer scope_pop(scope& scp)
     {
         if (scp.top == 0)
             throw std::logic_error("pr::scope_pop: can't pop root scope layer !");
         
+        scope_layer lyr = scp.layers.back();
         scp.layers.pop_back();
         --scp.top;
+        
+        return lyr;
     }
     
     symbol* scope_find(scope& scp, std::string const& name)
@@ -78,6 +81,11 @@ namespace pr
         }
         
         return 0;
+    }
+    
+    symbol* scope_find_innermost(scope& scp, std::string const& name)
+    {
+        return scope_layer_find(scp.layers[scp.top], name);
     }
     
     void scope_add(scope& scp, symbol const& sym)

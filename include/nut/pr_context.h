@@ -16,38 +16,23 @@
  * along with nut.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "nut/pr_lexer.h"
-#include "nut/pr_context.h"
-#include "nut/pr_parser.h"
-#include <string>
-#include <iostream>
-#include <fstream>
+#ifndef NUT_PR_CONTEXT_H
+#define NUT_PR_CONTEXT_H
 
-int main()
+#include "nut/pr_scope.h"
+
+namespace pr
 {
-    using namespace pr;
-    
-    std::ifstream fs("scratch/test.nut");
-    
-    context ctx = context_create();
-    lexer lex = lexer_create(fs, ctx);
-    parser par = parser_create(lex, ctx);
-    
-    /*for (;;)
+    struct context
     {
-        token tok = lexer_get(lex);
-        token_pretty_print(tok, std::cout);
-        std::cout << std::endl;
-        
-        if (tok.type == TOKEN_BAD || tok.type == TOKEN_EOF)
-            break;
-    }*/
+        scope scp;
+    };
     
-    parser_parse_program(par);
+    //! Create an empty parsing context.
+    context context_create();
     
-    parser_free(par);
-    lexer_free(lex);
-    context_free(ctx);
-    
-    return 0;
+    //! Free a parsing context.
+    void context_free(context& ctx);
 }
+
+#endif // NUT_PR_CONTEXT_H
