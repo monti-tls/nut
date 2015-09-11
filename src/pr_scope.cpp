@@ -21,6 +21,10 @@
 
 namespace pr
 {
+    /*************************/
+    /*** Public module API ***/
+    /*************************/
+    
     symbol* scope_layer_find(scope_layer& lyr, std::string const& name)
     {
         for (unsigned int i = 0; i < lyr.symbols.size(); ++i)

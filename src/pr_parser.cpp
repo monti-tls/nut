@@ -224,6 +224,9 @@ namespace pr
         expression_list(par);
     }
     
+    //TODO: would be cool if not done the classic recursive descent ugly way...
+    //      iterative implementations at http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
+    //
     //! An expression.
     //!
     //! expression := 
