@@ -19,6 +19,7 @@
 #include "nut/pr_lexer.h"
 #include "nut/pr_context.h"
 #include "nut/pr_parser.h"
+#include "nut/sem_ast_node.h"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -46,11 +47,15 @@ int main()
                 break;
         }*/
         
-        parser_parse_program(par);
+        sem::ast_node* ast = parser_parse_program(par);
         
         parser_free(par);
         lexer_free(lex);
         context_free(ctx);
+        
+        sem::ast_pretty_print(ast);
+        
+        sem::ast_free(ast);
     }
     catch (std::exception const& exc)
     {

@@ -33,12 +33,15 @@ DECL_TOKEN_CHAR (RIGHT_CURLY,   '}')
 
 DECL_TOKEN_OP   (LESS,          "<")
 DECL_TOKEN_OP   (GREATER,       ">")
+DECL_TOKEN_OP   (EQUAL,         "==")
 DECL_TOKEN_OP   (LESS_EQUAL,    "<=")
-DECL_TOKEN_OP   (GEATER_EQUAL,  ">=")
+DECL_TOKEN_OP   (GREATER_EQUAL, ">=")
+DECL_TOKEN_OP   (NOT_EQUAL,     "!=")
 DECL_TOKEN_OP   (PLUS,          "+")
 DECL_TOKEN_OP   (MINUS,         "-")
 DECL_TOKEN_OP   (STAR,          "*")
 DECL_TOKEN_OP   (SLASH,         "/")
+DECL_TOKEN_OP   (PERCENT,       "%")
 
 //! Keywords.
 //! Alphabet : alphanumeric and underscore, no number for the first character.

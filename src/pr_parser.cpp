@@ -17,12 +17,15 @@
  */
 
 #include "nut/pr_parser.h"
+#include "nut/sem_ast_node.h"
 #include <string>
 #include <sstream>
 #include <stdexcept>
 
 namespace pr
 {
+    using namespace sem;
+    
     /**************************************/
     /*** Private implementation section ***/
     /**************************************/
@@ -152,47 +155,58 @@ namespace pr
     //! The equivalent EBNF grammar is shown in the comments before each rule.
     //! Rule names are in lowercase letters, while tokens in UPPERCASE.
     
-    static void type_specifier(parser&);
-    static void argument_list(parser&);
+    static ast_node* type_specifier(parser&);
+    static ast_node* argument_list(parser&);
     
-    static void function_call_expr(parser&);
-    static void expression(parser&);
-    static void expression_list(parser&);
+    static ast_node* function_call_expr(parser&);
+    static ast_node* expression(parser&);
+    static ast_node* expression_list(parser&);
     
-    static void declaration_stmt(parser&);
-    static void assignment_stmt(parser&);
-    static void function_call_stmt(parser&);
-    static void statement(parser&);
-    static void statement_block(parser&);
+    static ast_node* declaration_stmt(parser&);
+    static ast_node* assignment_stmt(parser&);
+    static ast_node* function_call_stmt(parser&);
+    static ast_node* statement(parser&);
+    static ast_node* statement_block(parser&);
     
-    static void function_decl(parser&);
+    static ast_node* function_decl(parser&);
     
     //! A type specifier.
     //!
     //! type_specifier := IDENTIFIER?type
-    static void type_specifier(parser& par)
+    static ast_node* type_specifier(parser& par)
     {
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
         
         if (!parser_is_type_name(par, tok))
             parser_parse_error(tok, "\"" + tok.value + "\" does not name a type");
+        
+        // Create the AST node
+        type_specifier_node* node = new type_specifier_node();
+        node->name = tok.value;
+        return node;
     }
     
     //! An argument list.
     //! 
     //! argument_list := LEFT_PAREN (type_specifier IDENTIFIER (type_specifier IDENTIFIER)*)? RIGHT_PAREN
-    static void argument_list(parser& par)
+    static ast_node* argument_list(parser& par)
     {
+        argument_list_node* node = new argument_list_node();
+        
         parser_expect(par, TOKEN_LEFT_PAREN);
         
         while (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
         {
+            // Create the argument AST node
+            argument_node* arg_node = new argument_node();
+            
             // Get the argument's type
-            type_specifier(par);
+            ast_add_child(arg_node, type_specifier(par));
             
             // Get its name & check the declaration
             token tok = parser_expect(par, TOKEN_IDENTIFIER);
             parser_check_declaration(par, tok);
+            arg_node->name = tok.value;
             
             // Add it to the current scope
             symbol sym;
@@ -204,24 +218,34 @@ namespace pr
             // Eat comma, if needed
             if (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
                 parser_expect(par, TOKEN_COMMA);
+            
+            // Append the argument node the the list
+            ast_add_child(node, arg_node);
         }
         
         parser_expect(par, TOKEN_RIGHT_PAREN);
+        
+        return node;
     }
     
     //! A function call expression.
     //!
     //! function_call_expr := IDENTIFIER?function expression_list
-    static void function_call_expr(parser& par)
+    static ast_node* function_call_expr(parser& par)
     {
+        function_call_expr_node* node = new function_call_expr_node();
+        
         // Get the function name
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
+        node->name = tok.value;
         
         if (!parser_is_function_name(par, tok))
             parser_parse_error(tok, "\"" + tok.value + "\" does not name a function");
         
         // Get the calling expression list
-        expression_list(par);
+        ast_add_child(node, expression_list(par));
+        
+        return node;
     }
     
     //TODO: would be cool if not done the classic recursive descent ugly way...
@@ -230,20 +254,24 @@ namespace pr
     //! An expression.
     //!
     //! expression := 
-    static void expression(parser&)
-    {}
+    static ast_node* expression(parser&)
+    {
+        return new expression_node();
+    }
     
     //! An expression list.
     //!
     //! expression_list := LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN
-    static void expression_list(parser& par)
+    static ast_node* expression_list(parser& par)
     {
+        expression_list_node* node = new expression_list_node();
+        
         parser_expect(par, TOKEN_LEFT_PAREN);
         
         while (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
         {
             // Read in the expression
-            expression(par);
+            ast_add_child(node, expression(par));
             
             // Eat the comma, if needed
             if (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
@@ -251,19 +279,24 @@ namespace pr
         }
         
         parser_expect(par, TOKEN_RIGHT_PAREN);
+        
+        return node;
     }
     
     //! A variable declaration statement.
     //!
     //! declaration_stmt := type_specifier IDENTIFIER (EQUALS expression)? SEMICOLON
-    static void declaration_stmt(parser& par)
+    static ast_node* declaration_stmt(parser& par)
     {
+        declaration_stmt_node* node = new declaration_stmt_node();
+        
         // Type of the variable
-        type_specifier(par);
+        ast_add_child(node, type_specifier(par));
         
         // Get its name and check for multiple declarations
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
         parser_check_declaration(par, tok);
+        node->name = tok.value;
         
         // Add it to the current scope as soon as possible
         symbol sym;
@@ -276,19 +309,24 @@ namespace pr
         if (lexer_peekt(par.lex) == TOKEN_EQUALS)
         {
             lexer_get(par.lex);
-            expression(par);
+            ast_add_child(node, expression(par));
         }
         
         parser_expect(par, TOKEN_SEMICOLON);
+        
+        return node;
     }
     
     //! An assignment statement.
     //!
     //! assignment_stmt := IDENTIFIER?variable EQUALS expression SEMICOLON
-    static void assignment_stmt(parser& par)
+    static ast_node* assignment_stmt(parser& par)
     {
+        assignment_stmt_node* node = new assignment_stmt_node();
+        
         // Get the variable's name
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
+        node->name = tok.value;
         
         if (!parser_is_variable_name(par, tok))
             parser_parse_error(tok, "\"" + tok.value + "\" does not name a variable");
@@ -297,18 +335,24 @@ namespace pr
         parser_expect(par, TOKEN_EQUALS);
         
         // Get the expression
-        expression(par);
+        ast_add_child(node, expression(par));
         
         parser_expect(par, TOKEN_SEMICOLON);
+        
+        return node;
     }
     
     //! Function call statement.
     //!
     //! function_call_stmt := function_call_expr SEMICOLON
-    static void function_call_stmt(parser& par)
+    static ast_node* function_call_stmt(parser& par)
     {
-        function_call_expr(par);
+        function_call_stmt_node* node = new function_call_stmt_node();
+        
+        ast_add_child(node, function_call_expr(par));
         parser_expect(par, TOKEN_SEMICOLON);
+        
+        return node;
     }
     
     //! A single statement, terminated with a semicolon.
@@ -316,36 +360,42 @@ namespace pr
     //! statement := declaration_stmt
     //!            | assignment_stmt
     //!            | function_call_stmt
-    static void statement(parser& par)
+    static ast_node* statement(parser& par)
     {
+        statement_node* node = new statement_node();
+        
         token tok = lexer_peek(par.lex);
         
         if (tok.type != TOKEN_IDENTIFIER)
             parser_parse_error(tok, "unexpected token");
         
         if (parser_is_type_name(par, tok))
-            declaration_stmt(par);
+            ast_add_child(node, declaration_stmt(par));
         else if (parser_is_variable_name(par, tok))
-            assignment_stmt(par);
+            ast_add_child(node, assignment_stmt(par));
         else if (parser_is_function_name(par, tok))
-            function_call_stmt(par);
+            ast_add_child(node, function_call_stmt(par));
         else
             parser_parse_error(tok, "use of undeclared identifier `" + tok.value + "'");
+        
+        return node;
     }
     
     //! A statement block, enclosed in curly braces.
     //!
     //! statement_block := LEFT_CURLY statement* RIGHT_CURLY
-    static void statement_block(parser& par)
+    static ast_node* statement_block(parser& par)
     {
+        statement_block_node* node = new statement_block_node();
+        
         parser_expect(par, TOKEN_LEFT_CURLY);
         
         while (lexer_peekt(par.lex) != TOKEN_RIGHT_CURLY)
-        {
-            statement(par);
-        }
+            ast_add_child(node, statement(par));
         
         parser_expect(par, TOKEN_RIGHT_CURLY);
+        
+        return node;
     }
     
     //! A function declaration.
@@ -353,14 +403,17 @@ namespace pr
     //! function_decl := type_specifier IDENTIFIER
     //!                  LEFT_PAREN argument_list RIGHT_PAREN
     //!                  statement_block
-    static void function_decl(parser& par)
+    static ast_node* function_decl(parser& par)
     {
+        function_decl_node* node = new function_decl_node();
+        
         // Return type
-        type_specifier(par);
+        ast_add_child(node, type_specifier(par));
         
         // Get its name and check for multiple definitions
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
         parser_check_declaration(par, tok);
+        node->name = tok.value;
         
         // Add the function to the current scope
         symbol sym;
@@ -373,14 +426,16 @@ namespace pr
         scope_push(par.ctx.scp);
         
         // Arguments specification
-        argument_list(par);
+        ast_add_child(node, argument_list(par));
         
         // Function body
-        statement_block(par);
+        ast_add_child(node, statement_block(par));
         
         // Pop the function scope
         //FIXME: save the layer in the function representation in the AST
         scope_pop(par.ctx.scp);
+        
+        return node;
     }
     
     /*************************/
@@ -396,8 +451,8 @@ namespace pr
     void parser_free(parser&)
     {}
     
-    void parser_parse_program(parser& par)
+    ast_node* parser_parse_program(parser& par)
     {
-        function_decl(par);
+        return function_decl(par);
     }
 }

@@ -21,6 +21,7 @@
 
 #include "nut/pr_lexer.h"
 #include "nut/pr_context.h"
+#include "nut/sem_ast_node.h"
 
 namespace pr
 {
@@ -39,7 +40,7 @@ namespace pr
     void parser_free(parser& par);
     
     //! Parse a program module.
-    void parser_parse_program(parser& par);
+    sem::ast_node* parser_parse_program(parser& par);
 }
 
 #endif // NUT_PR_PARSER_H
