@@ -23,7 +23,119 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
+
+#include <map>
+
+int expression(pr::lexer& lex, int rbp = 0);
+
+struct op_base
+{
+    int rbp;
+    virtual int nud(pr::lexer& lex) = 0;
+    virtual int led(pr::lexer& lex, int left) = 0;
+};
+
+struct op_literal : public op_base
+{
+    int val;
+    
+    op_literal(int val) : val(val) {
+        rbp = 1;
+    }
+    
+    int nud(pr::lexer&) {
+        std::cout << "int.nud" << std::endl;
+        return val;
+    }
+    
+    int led(pr::lexer&, int) { return 0; }
+};
+
+struct op_add : public op_base
+{
+    op_add() {
+        rbp = 10;
+    }
+    
+    // Unary version
+    int nud(pr::lexer& lex) {
+        std::cout << "add.nud" << std::endl;
+        return expression(lex, rbp);
+    }
+    
+    // Binary version
+    int led(pr::lexer& lex, int left)
+    {
+        std::cout << "add.led" << std::endl;
+        int right = expression(lex, rbp);
+        return left+right;
+    }
+};
+
+struct op_sub : public op_base
+{
+    op_sub() {
+        rbp = 10;
+    }
+    
+    // Unary version
+    int nud(pr::lexer& lex) {
+        std::cout << "sub.nud" << std::endl;
+        return -expression(lex, rbp);
+    }
+    
+    // Binary version
+    int led(pr::lexer& lex, int left)
+    {
+        std::cout << "sub.led" << std::endl;
+        int right = expression(lex, rbp);
+        return left-right;
+    }
+};
+
+op_base* find_by_tok(pr::token tok)
+{
+    switch (tok.type)
+    {
+        case pr::TOKEN_INTEGER:
+            return new op_literal(std::stoi(tok.value));
+        case pr::TOKEN_PLUS:
+            return new op_add();
+        case pr::TOKEN_MINUS:
+            return new op_sub();
+            
+        default:
+            return 0;
+    }
+}
+
+int expression(pr::lexer& lex, int rbp)
+{
+    using namespace pr;
+    
+    token operand_tok = lexer_peek(lex);
+    op_base* operand = find_by_tok(operand_tok);
+    if (!operand)
+        throw std::logic_error("expected expression");
+    
+    lexer_get(lex);
+    int left = operand->nud(lex);
+    
+    for (;;)
+    {
+        token op_tok = lexer_peek(lex);
+        op_base* op = find_by_tok(op_tok);
+        if (!op)
+            break;
+        
+        lexer_get(lex);
+        left = op->led(lex, left);
+    }
+    
+    return left;
+}
 
 int main()
 {
@@ -31,21 +143,31 @@ int main()
     
     try
     {
-        std::ifstream fs("scratch/test.nut");
+        std::string s = "-6+1";
+        std::istringstream ss;
+        ss.str(s);
+        
+        context ctx = context_create();
+        lexer lex = lexer_create(ss, ctx);
+        
+        std::cout << expression(lex, 0);
+        
+        lexer_free(lex);
+        context_free(ctx);
+    }
+    catch (std::exception const& exc)
+    {
+        std::cerr << exc.what() << std::endl;
+        return -1;
+    }
     
+    /*try
+    {
+        std::ifstream fs("scratch/test.nut");
+        
         context ctx = context_create();
         lexer lex = lexer_create(fs, ctx);
         parser par = parser_create(lex, ctx);
-        
-        /*for (;;)
-        {
-            token tok = lexer_get(lex);
-            token_pretty_print(tok, std::cout);
-            std::cout << std::endl;
-            
-            if (tok.type == TOKEN_BAD || tok.type == TOKEN_EOF)
-                break;
-        }*/
         
         sem::ast_node* ast = parser_parse_program(par);
         
@@ -61,7 +183,7 @@ int main()
     {
         std::cerr << exc.what() << std::endl;
         return -1;
-    }
+    }*/
     
     return 0;
 }

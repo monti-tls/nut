@@ -30,37 +30,91 @@
 //!
 //! In the descriptions below, [i] stands for the i-th children pointer.
  
+////////////////////////////////////////////////////////////////
+//////////////// Helper nodes //////////////////////////////////
+////////////////////////////////////////////////////////////////
+ 
 //! A simple type specifier node.
 //!
 //! name: name of the type
 DECL_NODE(TYPE_SPECIFIER, type_specifier,
           std::string name;)
 
-//! An argument node.
+//! An argument declaration node.
 //!
 //! name: name of the argument symbol
 //! [0]: TYPE_SPECIFIER
 DECL_NODE(ARGUMENT, argument,
           std::string name;)
           
-//! An argument list node.
+//! An argument declaration list node.
 //!
 //! [i] -> ARGUMENT
 DECL_NODE(ARGUMENT_LIST, argument_list,)
 
-//! A function call expression.
+////////////////////////////////////////////////////////////////
+//////////////// Literals //////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+//! An integer literal.
 //!
-//! name: name of the function symbol
-//! [0] -> EXPRESSION_LIST
-DECL_NODE(FUNCTION_CALL_EXPR, function_call_expr,
+//! value: the literal value.
+DECL_NODE(INTEGER_LITERAL_EXPR, integer_literal_expr,
+          int value;)
+          
+//! An string literal.
+//!
+//! value: the literal value.
+DECL_NODE(STRING_LITERAL_EXPR, string_literal_expr,
+          std::string value;)
+
+//! An identifier expression literal.
+//!
+//! name: the name of the symbol.
+DECL_NODE(IDENTIFIER_EXPR, identifier_expr,
           std::string name;)
 
-DECL_NODE(EXPRESSION, expression,)
+////////////////////////////////////////////////////////////////
+//////////////// Arithmetic expressions ////////////////////////
+////////////////////////////////////////////////////////////////
 
-//! A list of expressions.
+DECL_NODE(NEG_EXPR, neg_expr,)
+DECL_NODE(ADD_EXPR, add_expr,)
+DECL_NODE(SUB_EXPR, sub_expr,)
+DECL_NODE(MUL_EXPR, mul_expr,)
+DECL_NODE(DIV_EXPR, div_expr,)
+
+////////////////////////////////////////////////////////////////
+/////////////// Expressions w/ side effects ////////////////////
+////////////////////////////////////////////////////////////////
+
+//! An assignment expression.
 //!
-//! [i] -> EXPRESSION
-DECL_NODE(EXPRESSION_LIST, expression_list,)
+//! [0] -> lhs l-value (writable)
+//! [1] -> rhs r-value (readable)
+DECL_NODE(ASSIGNMENT_EXPR, assignment_expr,)
+
+//! A function call expression.
+//!
+//! [0] -> EXPRESSION (function symbol)
+//! [1] -> LIST_EXPR  (argument values)
+DECL_NODE(FUNCTION_CALL_EXPR, function_call_expr,)
+
+//! A member access expression.
+//!
+//! [0] -> EXPRESSION (struct symbol)
+//! [1] -> EXPRESSION (member symbol)
+DECL_NODE(MEMBER_ACCESS_EXPR, member_access_expr,)
+
+//! An expression list node, in a linked-list fashion.
+//!
+//! [0] -> EXPRESSION
+//! [1] -> LIST_EXPR or 0 (next element in the list)
+DECL_NODE(LIST_EXPR, list_expr,)
+
+////////////////////////////////////////////////////////////////
+//////////////// Statement nodes ///////////////////////////////
+////////////////////////////////////////////////////////////////
           
 //! A variable declaration statement.
 //!
@@ -69,27 +123,19 @@ DECL_NODE(EXPRESSION_LIST, expression_list,)
 DECL_NODE(DECLARATION_STMT, declaration_stmt,
           std::string name;)
 
-//! A variable assignment statement.
-//!
-//! name: name of the variable symbol.
-//! [0] -> EXPRESSION
-DECL_NODE(ASSIGNMENT_STMT, assignment_stmt,
-          std::string name;)
-
-//! A function call statement.
-//!
-//! [0] -> FUNCTION_CALL_EXPR
-DECL_NODE(FUNCTION_CALL_STMT, function_call_stmt,)
-
 //! A generic statement.
 //!
-//! [0] -> *_STMT
+//! [0] -> EXPRESSION or *_STMT
 DECL_NODE(STATEMENT, statement,)
 
 //! A statement block.
 //!
 //! [i] -> STATEMENT
 DECL_NODE(STATEMENT_BLOCK, statement_block,)
+
+////////////////////////////////////////////////////////////////
+//////////////// Top-level declarators /////////////////////////
+////////////////////////////////////////////////////////////////
 
 //! A function declaration.
 //!

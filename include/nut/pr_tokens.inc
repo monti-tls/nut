@@ -20,7 +20,6 @@
  
 DECL_TOKEN_CHAR (COMMA,         ',')
 DECL_TOKEN_CHAR (SEMICOLON,     ';')
-DECL_TOKEN_CHAR (DOT,           '.')
 DECL_TOKEN_CHAR (EQUALS,        '=')
 DECL_TOKEN_CHAR (LEFT_PAREN,    '(')
 DECL_TOKEN_CHAR (RIGHT_PAREN,   ')')
@@ -42,6 +41,11 @@ DECL_TOKEN_OP   (MINUS,         "-")
 DECL_TOKEN_OP   (STAR,          "*")
 DECL_TOKEN_OP   (SLASH,         "/")
 DECL_TOKEN_OP   (PERCENT,       "%")
+DECL_TOKEN_OP   (DOT,           ".")
+DECL_TOKEN_OP   (BANG,          "!")
+DECL_TOKEN_OP   (TILDE,         "~")
+DECL_TOKEN_OP   (PLUSPLUS,      "++")
+DECL_TOKEN_OP   (MINUSMINUS,    "--")
 
 //! Keywords.
 //! Alphabet : alphanumeric and underscore, no number for the first character.
