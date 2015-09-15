@@ -17,15 +17,13 @@
  */
 
 #include "nut/pr_parser.h"
-#include "nut/sem_ast_node.h"
+#include "nut/pr_pratt.h"
 #include <string>
 #include <sstream>
 #include <stdexcept>
 
 namespace pr
 {
-    using namespace sem;
-    
     /**************************************/
     /*** Private implementation section ***/
     /**************************************/
@@ -64,110 +62,21 @@ namespace pr
         return 0;
     }
     
-    //! Throw out an error, printing the message msg and location of the token tok.
-    static void parser_parse_error(token const& tok, std::string const& msg)
-    {
-        std::ostringstream ss;
-        ss << "pr::parser_parse_error: line " << tok.info.line;
-        ss << ", col " << tok.info.column << ": " << msg;
-        throw std::logic_error(ss.str());
-    }
-    
-    //! Check that the next token is of the given type.
-    //! Throw an error if it is not the case.
-    //! If err_msg is empty, it outputs the default error message (automatic), otherwise
-    //!   it outputs err_msg.
-    //! If eat == true, consume the token and return it.
-    //! If eat == false, the return value is uninitialized.
-    static token parser_expect(parser& par, int type, std::string const& err_msg = "", bool eat = true)
-    {
-        std::string msg = err_msg;
-        
-        if (!msg.size())
-        {
-            error_message* emsg = parser_find_default_error_message(type);
-            if (!emsg)
-                msg = "bogus bogus ! can't find a default error message for this token :(";
-            else
-                msg = emsg->message;
-        }
-        
-        if (lexer_peekt(par.lex) != type)
-            parser_parse_error(lexer_peek(par.lex), msg);
-        
-        return eat ? lexer_get(par.lex) : token();
-    }
-    
-    //! Check an identifier token against multiple declarations.
-    static void parser_check_declaration(parser& par, token const& tok)
-    {
-        symbol* sym = scope_find_innermost(par.ctx.scp, tok.value);
-        symbol* glob_sym = scope_find(par.ctx.scp, tok.value);
-        //! Issue an error either if :
-        //!   - the symbol is already declared in the current scope layer
-        //!   - the symbol is a builtin
-        if (sym || (glob_sym && glob_sym->flags & SYM_FLAG_BUILTIN))
-        {
-            std::ostringstream ss;
-            ss << "symbol `" << tok.value << "' is already declared ";
-            
-            if (sym && !(sym->flags & SYM_FLAG_BUILTIN))
-                ss << "(previously declared at line " << sym->info.line << ", col " << sym->info.column << ")";
-            else if (sym || glob_sym)
-                ss << "(`" << tok.value << "' is a builtin symbol)";
-            
-            parser_parse_error(tok, ss.str());
-        }
-    }
-    
-    //! Check if an identifier token is a type name.
-    static bool parser_is_type_name(parser& par, token const& tok)
-    {
-        symbol* sym = scope_find(par.ctx.scp, tok.value);
-        if (!sym)
-            return false;
-        
-        return sym->flags & SYM_FLAG_TYPE;
-    }
-    
-    //! Check if an identifier token is a variable name.
-    static bool parser_is_variable_name(parser& par, token const& tok)
-    {
-        symbol* sym = scope_find(par.ctx.scp, tok.value);
-        if (!sym)
-            return false;
-        
-        return sym->flags & SYM_FLAG_VARIABLE;
-    }
-    
-    //! Check if an identifier token is a function name.
-    static bool parser_is_function_name(parser& par, token const& tok)
-    {
-        symbol* sym = scope_find(par.ctx.scp, tok.value);
-        if (!sym)
-            return false;
-        
-        return sym->flags & SYM_FLAG_FUNCTION;
-    }
-    
     //! The rules below are not prefixed with parser_rule_
     //!   for the sake of readability.
     //! The equivalent EBNF grammar is shown in the comments before each rule.
     //! Rule names are in lowercase letters, while tokens in UPPERCASE.
+    //! The grammar is written in pr_grammar.bnf.
+    //! The expression parser is defined in pr_pratt.cpp.
     
+    //! Helper rules.
     static ast_node* type_specifier(parser&);
     static ast_node* argument_list(parser&);
-    
-    static ast_node* function_call_expr(parser&);
-    static ast_node* expression(parser&);
-    static ast_node* expression_list(parser&);
-    
+    //! Statements.
     static ast_node* declaration_stmt(parser&);
-    static ast_node* assignment_stmt(parser&);
-    static ast_node* function_call_stmt(parser&);
     static ast_node* statement(parser&);
     static ast_node* statement_block(parser&);
-    
+    //! Top-level declarators.
     static ast_node* function_decl(parser&);
     
     //! A type specifier.
@@ -228,64 +137,9 @@ namespace pr
         return node;
     }
     
-    //! A function call expression.
-    //!
-    //! function_call_expr := IDENTIFIER?function expression_list
-    static ast_node* function_call_expr(parser& par)
-    {
-        function_call_expr_node* node = new function_call_expr_node();
-        
-        // Get the function name
-        token tok = parser_expect(par, TOKEN_IDENTIFIER);
-        node->name = tok.value;
-        
-        if (!parser_is_function_name(par, tok))
-            parser_parse_error(tok, "\"" + tok.value + "\" does not name a function");
-        
-        // Get the calling expression list
-        ast_add_child(node, expression_list(par));
-        
-        return node;
-    }
-    
-    //TODO: would be cool if not done the classic recursive descent ugly way...
-    //      iterative implementations at http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
-    //
-    //! An expression.
-    //!
-    //! expression := 
-    static ast_node* expression(parser&)
-    {
-        return new expression_node();
-    }
-    
-    //! An expression list.
-    //!
-    //! expression_list := LEFT_PAREN (expression (COMMA expression)*)? RIGHT_PAREN
-    static ast_node* expression_list(parser& par)
-    {
-        expression_list_node* node = new expression_list_node();
-        
-        parser_expect(par, TOKEN_LEFT_PAREN);
-        
-        while (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
-        {
-            // Read in the expression
-            ast_add_child(node, expression(par));
-            
-            // Eat the comma, if needed
-            if (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
-                parser_expect(par, TOKEN_COMMA);
-        }
-        
-        parser_expect(par, TOKEN_RIGHT_PAREN);
-        
-        return node;
-    }
-    
     //! A variable declaration statement.
     //!
-    //! declaration_stmt := type_specifier IDENTIFIER (EQUALS expression)? SEMICOLON
+    //! declaration_stmt := type_specifier IDENTIFIER (EQUALS pratt_expression)? SEMICOLON
     static ast_node* declaration_stmt(parser& par)
     {
         declaration_stmt_node* node = new declaration_stmt_node();
@@ -309,47 +163,9 @@ namespace pr
         if (lexer_peekt(par.lex) == TOKEN_EQUALS)
         {
             lexer_get(par.lex);
-            ast_add_child(node, expression(par));
+            ast_add_child(node, pratt_expression(par));
         }
         
-        parser_expect(par, TOKEN_SEMICOLON);
-        
-        return node;
-    }
-    
-    //! An assignment statement.
-    //!
-    //! assignment_stmt := IDENTIFIER?variable EQUALS expression SEMICOLON
-    static ast_node* assignment_stmt(parser& par)
-    {
-        assignment_stmt_node* node = new assignment_stmt_node();
-        
-        // Get the variable's name
-        token tok = parser_expect(par, TOKEN_IDENTIFIER);
-        node->name = tok.value;
-        
-        if (!parser_is_variable_name(par, tok))
-            parser_parse_error(tok, "\"" + tok.value + "\" does not name a variable");
-        
-        // Parse the equal sign
-        parser_expect(par, TOKEN_EQUALS);
-        
-        // Get the expression
-        ast_add_child(node, expression(par));
-        
-        parser_expect(par, TOKEN_SEMICOLON);
-        
-        return node;
-    }
-    
-    //! Function call statement.
-    //!
-    //! function_call_stmt := function_call_expr SEMICOLON
-    static ast_node* function_call_stmt(parser& par)
-    {
-        function_call_stmt_node* node = new function_call_stmt_node();
-        
-        ast_add_child(node, function_call_expr(par));
         parser_expect(par, TOKEN_SEMICOLON);
         
         return node;
@@ -358,25 +174,24 @@ namespace pr
     //! A single statement, terminated with a semicolon.
     //!
     //! statement := declaration_stmt
-    //!            | assignment_stmt
-    //!            | function_call_stmt
+    //!            | pratt_expression
     static ast_node* statement(parser& par)
     {
         statement_node* node = new statement_node();
         
+        // If the next token is a type name identifier, this
+        //   is a declaration
         token tok = lexer_peek(par.lex);
-        
-        if (tok.type != TOKEN_IDENTIFIER)
-            parser_parse_error(tok, "unexpected token");
-        
-        if (parser_is_type_name(par, tok))
-            ast_add_child(node, declaration_stmt(par));
-        else if (parser_is_variable_name(par, tok))
-            ast_add_child(node, assignment_stmt(par));
-        else if (parser_is_function_name(par, tok))
-            ast_add_child(node, function_call_stmt(par));
+        if (tok.type == TOKEN_IDENTIFIER)
+        {
+            if (parser_is_type_name(par, tok))
+                ast_add_child(node, declaration_stmt(par));
+        }
+        // Otherwise we expect an expression
         else
-            parser_parse_error(tok, "use of undeclared identifier `" + tok.value + "'");
+        {
+            ast_add_child(node, pratt_expression(par));
+        }
         
         return node;
     }
@@ -454,5 +269,80 @@ namespace pr
     ast_node* parser_parse_program(parser& par)
     {
         return function_decl(par);
+    }
+    
+    void parser_parse_error(token const& tok, std::string const& msg)
+    {
+        std::ostringstream ss;
+        ss << "pr::parser_parse_error: line " << tok.info.line;
+        ss << ", col " << tok.info.column << ": " << msg;
+        throw std::logic_error(ss.str());
+    }
+    
+    token parser_expect(parser& par, int type, std::string const& err_msg, bool eat)
+    {
+        std::string msg = err_msg;
+        
+        if (!msg.size())
+        {
+            error_message* emsg = parser_find_default_error_message(type);
+            if (!emsg)
+                msg = "bogus bogus ! can't find a default error message for this token :(";
+            else
+                msg = emsg->message;
+        }
+        
+        if (lexer_peekt(par.lex) != type)
+            parser_parse_error(lexer_peek(par.lex), msg);
+        
+        return eat ? lexer_get(par.lex) : token();
+    }
+    
+    void parser_check_declaration(parser& par, token const& tok)
+    {
+        symbol* sym = scope_find_innermost(par.ctx.scp, tok.value);
+        symbol* glob_sym = scope_find(par.ctx.scp, tok.value);
+        //! Issue an error either if :
+        //!   - the symbol is already declared in the current scope layer
+        //!   - the symbol is a builtin
+        if (sym || (glob_sym && glob_sym->flags & SYM_FLAG_BUILTIN))
+        {
+            std::ostringstream ss;
+            ss << "symbol `" << tok.value << "' is already declared ";
+            
+            if (sym && !(sym->flags & SYM_FLAG_BUILTIN))
+                ss << "(previously declared at line " << sym->info.line << ", col " << sym->info.column << ")";
+            else if (sym || glob_sym)
+                ss << "(`" << tok.value << "' is a builtin symbol)";
+            
+            parser_parse_error(tok, ss.str());
+        }
+    }
+    
+    bool parser_is_type_name(parser& par, token const& tok)
+    {
+        symbol* sym = scope_find(par.ctx.scp, tok.value);
+        if (!sym)
+            return false;
+        
+        return sym->flags & SYM_FLAG_TYPE;
+    }
+    
+    bool parser_is_variable_name(parser& par, token const& tok)
+    {
+        symbol* sym = scope_find(par.ctx.scp, tok.value);
+        if (!sym)
+            return false;
+        
+        return sym->flags & SYM_FLAG_VARIABLE;
+    }
+    
+    bool parser_is_function_name(parser& par, token const& tok)
+    {
+        symbol* sym = scope_find(par.ctx.scp, tok.value);
+        if (!sym)
+            return false;
+        
+        return sym->flags & SYM_FLAG_FUNCTION;
     }
 }

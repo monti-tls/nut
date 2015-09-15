@@ -16,9 +16,9 @@
  * along with nut.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "nut/sem_ast_node.h"
+#include "nut/pr_ast.h"
 
-namespace sem
+namespace pr
 {
     struct named_node
     {
@@ -30,7 +30,7 @@ namespace sem
     
     static named_node named_nodes[] =
     {
-        #include "nut/sem_ast_nodes.inc"
+        #include "nut/pr_ast_nodes.inc"
     };
     
     static int named_nodes_size = sizeof(named_nodes) / sizeof(named_node);

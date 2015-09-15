@@ -23,8 +23,20 @@
 #include "nut/pr_context.h"
 #include <istream>
 
+//!
+//! pr_lexer
+//!
+
+//! This module is the Nut lexer.
+//! It extracts valued tokens from an input character stream.
+//! Tokens are defined in pr_token.h and pr_tokens.inc.
+//! Internally, simple tokens (i.e. single chars, operators, keywords, ...) are stored in tables.
+//! Valued tokens like identifiers, numeric literals, ... are hard-coded in the lexer.
+
 namespace pr
 {
+    //! The lexer structure.
+    //! It holds the input stream and a parsing context reference.
     struct lexer
     {
         lexer(std::istream& in, context& ctx) : in(in), ctx(ctx) {};

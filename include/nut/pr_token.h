@@ -22,6 +22,15 @@
 #include <string>
 #include <iostream>
 
+//!
+//! pr_token
+//!
+
+//! This file defines the lexed tokens structure.
+//! All tokens are defined in pr_tokens.inc, using the DECL_TOKEN* macros,
+//!   this file is then included by this header, pr_tokens.cpp for pretty-print
+//!   name mapping, and by the lexer.
+
 namespace pr
 {
     #define DECL_TOKEN(name)             TOKEN_ ## name,
@@ -39,11 +48,13 @@ namespace pr
     #undef DECL_TOKEN_CHAR
     #undef DECL_TOKEN
     
+    //! Information about a token's location in the input stream.
     struct token_info
     {
         int line, column;
     };
     
+    //! An (eventually) valued token.
     struct token
     {
         int type;
@@ -51,6 +62,8 @@ namespace pr
         token_info info;
     };
     
+    //! Print out a token (w/ its value, if any) to an output stream
+    //!   in the human-readable format TYPE(='value')?
     void token_pretty_print(token const& tok, std::ostream& os = std::cout);
 }
 

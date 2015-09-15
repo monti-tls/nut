@@ -19,7 +19,7 @@
 #include "nut/pr_lexer.h"
 #include "nut/pr_context.h"
 #include "nut/pr_parser.h"
-#include "nut/sem_ast_node.h"
+#include "nut/pr_ast.h"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -28,7 +28,7 @@
 
 #include <map>
 
-int expression(pr::lexer& lex, int rbp = 0);
+/*int expression(pr::lexer& lex, int rbp = 0);
 
 struct op_base
 {
@@ -135,13 +135,13 @@ int expression(pr::lexer& lex, int rbp)
     }
     
     return left;
-}
+}*/
 
 int main()
 {
     using namespace pr;
     
-    try
+    /*try
     {
         std::string s = "-6+1";
         std::istringstream ss;
@@ -159,9 +159,9 @@ int main()
     {
         std::cerr << exc.what() << std::endl;
         return -1;
-    }
+    }*/
     
-    /*try
+    try
     {
         std::ifstream fs("scratch/test.nut");
         
@@ -169,21 +169,21 @@ int main()
         lexer lex = lexer_create(fs, ctx);
         parser par = parser_create(lex, ctx);
         
-        sem::ast_node* ast = parser_parse_program(par);
+        ast_node* ast = parser_parse_program(par);
         
         parser_free(par);
         lexer_free(lex);
         context_free(ctx);
         
-        sem::ast_pretty_print(ast);
+        ast_pretty_print(ast);
         
-        sem::ast_free(ast);
+        ast_free(ast);
     }
     catch (std::exception const& exc)
     {
         std::cerr << exc.what() << std::endl;
         return -1;
-    }*/
+    }
     
     return 0;
 }

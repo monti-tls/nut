@@ -21,8 +21,16 @@
 
 #include "nut/pr_scope.h"
 
+//!
+//! pr_context
+//!
+
+//! This file defines the parsing context.
+//! It currently hold a single stack scope object.
+
 namespace pr
 {
+    //! The parsing context structure.
     struct context
     {
         scope scp;

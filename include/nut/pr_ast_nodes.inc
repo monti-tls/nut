@@ -17,13 +17,13 @@
  */
 
 //!
-//! sem_ast_nodes.inc
+//! pr_ast_nodes.inc
 //!
 
 //! This file defines the abstract syntax tree nodes.
 //! It is included by :
-//!   - sem_ast_node.h:   to declare the node's structures and tag enumeration constants.
-//!   - sem_ast_node.cpp: to declare pretty-print node names.
+//!   - pr_ast_node.h:   to declare the node's structures and tag enumeration constants.
+//!   - pr_ast_node.cpp: to declare pretty-print node names.
 //! Each file above defines the DECL_NODE macro for the appropriate behavior.
 //! The syntax is DECL_NODE(tag_name, struct_name, members), where
 //!   the "members" field stands for the AST node's struct members.
@@ -61,12 +61,6 @@ DECL_NODE(ARGUMENT_LIST, argument_list,)
 //! value: the literal value.
 DECL_NODE(INTEGER_LITERAL_EXPR, integer_literal_expr,
           int value;)
-          
-//! An string literal.
-//!
-//! value: the literal value.
-DECL_NODE(STRING_LITERAL_EXPR, string_literal_expr,
-          std::string value;)
 
 //! An identifier expression literal.
 //!
@@ -78,7 +72,12 @@ DECL_NODE(IDENTIFIER_EXPR, identifier_expr,
 //////////////// Arithmetic expressions ////////////////////////
 ////////////////////////////////////////////////////////////////
 
+//! Prefix increment and decrement.
+DECL_NODE(INC_EXPR, inc_expr,)
+DECL_NODE(DEC_EXPR, dec_expr,)
+//! Negation.
 DECL_NODE(NEG_EXPR, neg_expr,)
+//! Addition, subtraction, multiplication and division.
 DECL_NODE(ADD_EXPR, add_expr,)
 DECL_NODE(SUB_EXPR, sub_expr,)
 DECL_NODE(MUL_EXPR, mul_expr,)

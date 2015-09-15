@@ -22,8 +22,21 @@
 #include "nut/pr_token.h"
 #include <string>
 
+//!
+//! pr_symbol
+//!
+
+//! This header defines a simple symbol structure, w/
+//!   name and flags.
+
 namespace pr
 {
+    //! The symbol flags enumeration.
+    //!
+    //! TYPE:     the symbol is a type name
+    //! VARIABLE: the symbol is a variable name
+    //! FUNCTION: the symbol is a function name
+    //! BUILTIN:  the symbol is a built-in language feature
     enum
     {
         SYM_FLAG_TYPE     = 0x0001,
@@ -33,6 +46,7 @@ namespace pr
         SYM_FLAG_BUILTIN  = 0x8000
     };
     
+    //! The symbol structure.
     struct symbol
     {
         unsigned int flags;

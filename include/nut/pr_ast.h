@@ -16,28 +16,40 @@
  * along with nut.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NUT_SEM_AST_NODE_H
-#define NUT_SEM_AST_NODE_H
+#ifndef NUT_PR_AST_H
+#define NUT_PR_AST_H
 
 #include <string>
 #include <iostream>
 #include <vector>
 
-namespace sem
+//!
+//! pr_ast
+//!
+
+//! This file defines the Abstract Syntax Tree representation of the source code.
+//! Each node have a node.tag integer field that can take values from the enumeration below.
+//! Each kind of node defines its own structure (inheriting ast_node) to hold its data members.
+//! The pointer union in ast_node is here for simple (but unsafe !) cast :
+//!   node->as_type_specifier will be a type_specifier_node pointer.
+//!
+//! The nodes are defined in pr_ast_nodes.inc w/ the DECL_NODE macro.
+//! This file is included several times below in order to build up enumeration constants, casting pointers
+//!   and public node structures.
+
+namespace pr
 {
     //! Tag enumeration constants.
-    
     #define DECL_NODE(tag_name, name, members) tag_name,
     enum
     {
-        #include "nut/sem_ast_nodes.inc"
+        #include "nut/pr_ast_nodes.inc"
     };
     #undef DECL_NODE
     
     //! Forward declaration of node struct's.
-    
     #define DECL_NODE(tag_name, name, members) struct name ## _node;    
-    #include "nut/sem_ast_nodes.inc"
+    #include "nut/pr_ast_nodes.inc"
     #undef DECL_NODE
     
     //! Ast node structure.
@@ -58,7 +70,7 @@ namespace sem
         {
             ast_node* self;
             
-            #include "nut/sem_ast_nodes.inc"
+            #include "nut/pr_ast_nodes.inc"
         };
         #undef DECL_NODE
     };
@@ -70,7 +82,7 @@ namespace sem
             name ## _node() : ast_node() { tag = tag_name; } \
             members \
         };
-    #include "nut/sem_ast_nodes.inc"
+    #include "nut/pr_ast_nodes.inc"
     #undef DECL_NODE
     
     //! Print an AST node in a human-readable format.
@@ -86,4 +98,4 @@ namespace sem
     void ast_add_child(ast_node* node, ast_node* child);
 }
 
-#endif // NUT_SEM_AST_NODE_H
+#endif // NUT_PR_AST_H

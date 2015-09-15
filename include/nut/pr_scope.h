@@ -24,8 +24,23 @@
 #include <vector>
 #include <stack>
 
+//!
+//! pr_scope
+//!
+
+//! This module defines a stacked scope structure.
+//! A scope consists of multiple layers, the top layer consisting of
+//!   the current scope of the program.
+//! The scope system is mostly like the one in C-like languages :
+//!   a symbol is resolved top-down, and therefore symbols w/ the same name
+//!   can reside in different layers, and the topmost one will always be
+//!   picked first.
+//! We will use 'innermost' or 'topmost' for the deepest scope layer (at the top
+//!   of the stack).
+
 namespace pr
 {
+    //! A single scope layer, containing symbols.
     struct scope_layer
     {
         int depth;
@@ -41,6 +56,7 @@ namespace pr
     //! This does not check for duplicate symbols !
     void scope_layer_add(scope_layer& lyr, symbol const& sym);
     
+    //! A scope, containing several stacked layers.
     struct scope
     {
         unsigned int top;
