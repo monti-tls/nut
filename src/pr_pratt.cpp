@@ -40,13 +40,13 @@ namespace pr
         
         virtual ~expr_element() {}
         
-        virtual ast_node* nud(parser&)
+        virtual ast_node* nud(parser& par)
         {
             parser_parse_error(lexer_peek(par.lex), "nud BOGUS!");
             return 0;
         }
         
-        virtual ast_node* led(parser&, ast_node*)
+        virtual ast_node* led(parser& par, ast_node*)
         {
             parser_parse_error(lexer_peek(par.lex), "led BOGUS!");
             return 0;
