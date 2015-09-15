@@ -34,25 +34,25 @@
 //! +------------+--------+----------+---------------+
 //! | Precedence | LBP    | Operator | Associativity |
 //! +------------+--------+----------+---------------+
-//! | 1          | 100    |  x()     | left          | *
-//! |            |        |  x.y     | left          | *
+//! | 1          | 100    |  x()     | left          | o
+//! |            |        |  x.y     | left          | x
 //! +------------+--------+----------+---------------+
-//! |            |        |  ++x --x | N/A           | * *
-//! | 2          | 90     |  -x +x   | N/A           | * *
-//! |            |        |  !x ~x   | N/A           | ? ?
+//! |            |        |  ++x --x | N/A           | o o
+//! | 2          | 90     |  -x +x   | N/A           | o o
+//! |            |        |  !x ~x   | N/A           | o x
 //! +------------+--------+----------+---------------+
-//! | 3          | 80     |  * / %   | left          | * * ?
+//! | 3          | 80     |  * / %   | left          | o o x
 //! +------------+--------+----------+---------------+
-//! | 4          | 70     |  + -     | left          | * *
+//! | 4          | 70     |  + -     | left          | o o
 //! +------------+--------+----------+---------------+
-//! | 6          | 60     | < <=     | left          | ? ?
-//! |            |        | > >=     | left          | ? ?
+//! | 6          | 60     | < <=     | left          | x x
+//! |            |        | > >=     | left          | x x
 //! +------------+--------+----------+---------------+
-//! | 7          | 50     | == !=    | left          | ? ?
+//! | 7          | 50     | == !=    | left          | x x
 //! +------------+--------+----------+---------------+
-//! | 14         | 10     | =        | right         | *
+//! | 14         | 10     | =        | right         | o
 //! +------------+--------+----------+---------------+
-//! | 15         | 5      | ,        | left          | *
+//! | 15         | 5      | ,        | left          | o
 //! +------------+--------+----------+---------------+
 
 //! Elements declarations starts with ELEMENT_BEGIN(token, binary_lbp)
@@ -89,12 +89,6 @@ ELEMENT_UNARY_SHELL_CONSUME(0, TOKEN_RIGHT_PAREN)
 ELEMENT_BINARY_CONSUME     (function_call_expr_node, CUSTOM(0), TOKEN_RIGHT_PAREN)
 ELEMENT_END                ()
 
-//! Member access
-//!   x.y -> LBP = RBP = 100
-ELEMENT_BEGIN              (TOKEN_DOT, 100)
-ELEMENT_BINARY             (member_access_expr_node, LEFT)
-ELEMENT_END                ()
-
 //! Incrementation
 //!   ++x -> RBP = 90
 ELEMENT_BEGIN              (TOKEN_PLUSPLUS, 90)
@@ -121,6 +115,12 @@ ELEMENT_END                ()
 ELEMENT_BEGIN              (TOKEN_MINUS, 70)
 ELEMENT_UNARY              (neg_expr_node, 90)
 ELEMENT_BINARY             (sub_expr_node, LEFT)
+ELEMENT_END                ()
+
+//! Boolean negation
+//!  !x -> RBP = 90
+ELEMENT_BEGIN              (TOKEN_BANG, 90)
+ELEMENT_UNARY              (not_expr_node, 90)
 ELEMENT_END                ()
 
 //! Multiply

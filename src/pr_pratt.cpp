@@ -18,6 +18,7 @@
 
 #include "nut/pr_pratt.h"
 #include "nut/pr_parser.h"
+#include "nut/pr_token.h"
     
 namespace pr
 {
@@ -35,6 +36,7 @@ namespace pr
     //!   definitions.
     struct expr_element
     {
+        token saved_tok;
         int token_type;
         int lbp;
         
@@ -67,11 +69,14 @@ namespace pr
         int value;
         
         expr_integer_literal(token const& tok)
-        { value = std::stoi(tok.value); }
+        {
+            saved_tok = tok;
+            value = std::stoi(tok.value);
+        }
         
         ast_node* nud(parser&)
         {
-            integer_literal_expr_node* node = new integer_literal_expr_node();
+            integer_literal_expr_node* node = new integer_literal_expr_node(saved_tok);
             node->value = value;
             return node;
         }
@@ -83,12 +88,19 @@ namespace pr
         std::string name;
         
         expr_identifier(token const& tok)
-        { name = tok.value; }
-        
-        ast_node* nud(parser&)
         {
-            identifier_expr_node* node = new identifier_expr_node();
+            saved_tok = tok;
+            name = tok.value;
+        }
+        
+        ast_node* nud(parser& par)
+        {
+            identifier_expr_node* node = new identifier_expr_node(saved_tok);
             node->name = name;
+            
+            if (!scope_find(par.ctx.scp, name))
+                parser_parse_error(saved_tok, "use of undeclared identifier '" + name + "'");
+            
             return node;
         }
     };
@@ -113,12 +125,13 @@ namespace pr
     #define ELEMENT_LBP(associativity) CAT(ELEMENT_LBP_, associativity)
 
     //! Start an element structure declaration.
-    #define ELEMENT_BEGIN(token, binary_lbp) \
-        struct ELEMENT_STRUCT_NAME(token) : public expr_element \
+    #define ELEMENT_BEGIN(token_t, binary_lbp) \
+        struct ELEMENT_STRUCT_NAME(token_t) : public expr_element \
         { \
-            ELEMENT_STRUCT_NAME(token) () \
+            ELEMENT_STRUCT_NAME(token_t) (token tok) \
             { \
-                token_type = token; lbp = binary_lbp; \
+                saved_tok = tok; \
+                token_type = token_t; lbp = binary_lbp; \
             }
             
     //! Define an unary operator without node creation and with separate LBP.
@@ -142,7 +155,7 @@ namespace pr
     #define ELEMENT_UNARY(node_type, unary_lbp) \
         ast_node* nud(parser& par) \
         { \
-            node_type* node = new node_type(); \
+            node_type* node = new node_type(saved_tok); \
             ast_add_child(node, pratt_expression(par, unary_lbp)); \
             return node; \
         }
@@ -151,7 +164,7 @@ namespace pr
     #define ELEMENT_BINARY(node_type, associativity) \
         ast_node* led(parser& par, ast_node* left) \
         { \
-            node_type* node = new node_type(); \
+            node_type* node = new node_type(saved_tok); \
             ast_add_child(node, left); \
             ast_add_child(node, pratt_expression(par, ELEMENT_LBP(associativity))); \
             return node; \
@@ -162,7 +175,7 @@ namespace pr
     #define ELEMENT_BINARY_CONSUME(node_type, associativity, token) \
         ast_node* led(parser& par, ast_node* left) \
         { \
-            node_type* node = new node_type(); \
+            node_type* node = new node_type(saved_tok); \
             ast_add_child(node, left); \
             ast_add_child(node, pratt_expression(par, ELEMENT_LBP(associativity))); \
             parser_expect(par, token); \
@@ -205,9 +218,9 @@ namespace pr
         //!
         //! Define switch cases for automatically generated operator elements.
         //!
-        #define ELEMENT_BEGIN(token, binary_lbp) \
-            case token: \
-                return new ELEMENT_STRUCT_NAME(token)();
+        #define ELEMENT_BEGIN(token_t, binary_lbp) \
+            case token_t: \
+                return new ELEMENT_STRUCT_NAME(token_t)(tok);
 
         #define ELEMENT_UNARY(node_type, lbp)
         #define ELEMENT_UNARY_SHELL(lbp)

@@ -90,7 +90,7 @@ namespace pr
             parser_parse_error(tok, "\"" + tok.value + "\" does not name a type");
         
         // Create the AST node
-        type_specifier_node* node = new type_specifier_node();
+        type_specifier_node* node = new type_specifier_node(tok);
         node->name = tok.value;
         return node;
     }
@@ -100,14 +100,14 @@ namespace pr
     //! argument_list := LEFT_PAREN (type_specifier IDENTIFIER (type_specifier IDENTIFIER)*)? RIGHT_PAREN
     static ast_node* argument_list(parser& par)
     {
-        argument_list_node* node = new argument_list_node();
+        token tok = parser_expect(par, TOKEN_LEFT_PAREN);
         
-        parser_expect(par, TOKEN_LEFT_PAREN);
+        argument_list_node* node = new argument_list_node(tok);
         
         while (lexer_peekt(par.lex) != TOKEN_RIGHT_PAREN)
         {
             // Create the argument AST node
-            argument_node* arg_node = new argument_node();
+            argument_node* arg_node = new argument_node(lexer_peek(par.lex));
             
             // Get the argument's type
             ast_add_child(arg_node, type_specifier(par));
@@ -142,7 +142,7 @@ namespace pr
     //! declaration_stmt := type_specifier IDENTIFIER (EQUALS pratt_expression)? SEMICOLON
     static ast_node* declaration_stmt(parser& par)
     {
-        declaration_stmt_node* node = new declaration_stmt_node();
+        declaration_stmt_node* node = new declaration_stmt_node(lexer_peek(par.lex));
         
         // Type of the variable
         ast_add_child(node, type_specifier(par));
@@ -177,7 +177,7 @@ namespace pr
     //!            | pratt_expression
     static ast_node* statement(parser& par)
     {
-        statement_node* node = new statement_node();
+        statement_node* node = new statement_node(lexer_peek(par.lex));
         
         // If the next token is a type name identifier, this
         //   is a declaration
@@ -201,9 +201,9 @@ namespace pr
     //! statement_block := LEFT_CURLY statement* RIGHT_CURLY
     static ast_node* statement_block(parser& par)
     {
-        statement_block_node* node = new statement_block_node();
+        token tok = parser_expect(par, TOKEN_LEFT_CURLY);
         
-        parser_expect(par, TOKEN_LEFT_CURLY);
+        statement_block_node* node = new statement_block_node(tok);
         
         while (lexer_peekt(par.lex) != TOKEN_RIGHT_CURLY)
             ast_add_child(node, statement(par));
@@ -219,11 +219,13 @@ namespace pr
     //!                  LEFT_PAREN argument_list RIGHT_PAREN
     //!                  statement_block
     static ast_node* function_decl(parser& par)
-    {
-        function_decl_node* node = new function_decl_node();
-        
+    {   
         // Return type
-        ast_add_child(node, type_specifier(par));
+        ast_node* ret_type = type_specifier(par);
+        
+        // Create node
+        function_decl_node* node = new function_decl_node(lexer_peek(par.lex));
+        ast_add_child(node, ret_type);
         
         // Get its name and check for multiple definitions
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
@@ -274,7 +276,7 @@ namespace pr
     void parser_parse_error(token const& tok, std::string const& msg)
     {
         std::ostringstream ss;
-        ss << "pr::parser_parse_error: line " << tok.info.line;
+        ss << "parse error: line " << tok.info.line;
         ss << ", col " << tok.info.column << ": " << msg;
         throw std::logic_error(ss.str());
     }

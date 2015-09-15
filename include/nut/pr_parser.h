@@ -32,6 +32,22 @@
 //!   but does only implement statements and control-flow constructs.
 //! Expressions are implemented by a separate Pratt (top-down precedence parser) parser,
 //!   located in pr_pratt.h & .cpp.
+//!
+//! This parser keeps a scope in his context only
+//!   to check some basic things. The scope is also needed to distinguish
+//!   declarations and expression (as user may define type names).
+//! It checks :
+//!   - for multiple declarations of types, variables and functions
+//!   - for use of undeclared identifiers (see in pr_pratt.cpp), regardless of their kind.
+//! It does NOT check :
+//!   - for invalid function calls, for example (1+3)(...) or invalid call arity, see pass_call_check.
+//!   - for type errors, see pass_type_check.
+//!
+//! It also does NOT build a complete scope for the program, and local scopes are
+//!   destroyed during parsing. The complete scope tree is created by pass_create_scope_tree.
+//!
+//! No semantic information is extracted during parsing, and all checking are done in later
+//!   passes (see sem_pass.h).
 
 namespace pr
 {

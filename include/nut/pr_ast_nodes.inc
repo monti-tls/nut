@@ -77,6 +77,8 @@ DECL_NODE(INC_EXPR, inc_expr,)
 DECL_NODE(DEC_EXPR, dec_expr,)
 //! Negation.
 DECL_NODE(NEG_EXPR, neg_expr,)
+//! Boolean negation.
+DECL_NODE(NOT_EXPR, not_expr,)
 //! Addition, subtraction, multiplication and division.
 DECL_NODE(ADD_EXPR, add_expr,)
 DECL_NODE(SUB_EXPR, sub_expr,)

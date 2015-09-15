@@ -19,6 +19,7 @@
 #ifndef NUT_PR_AST_H
 #define NUT_PR_AST_H
 
+#include "nut/pr_token.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -55,10 +56,17 @@ namespace pr
     //! Ast node structure.
     struct ast_node
     {
-        ast_node() { self = this; }
+        ast_node(token tok)
+        {
+            saved_tok = tok;
+            self = this;
+        }
         
         //! Tag enumeration for cast.
         int tag;
+        
+        //! Saved token, from which this node originates.
+        token saved_tok;
         
         //! Children nodes vector.
         std::vector<ast_node*> children;
@@ -79,7 +87,7 @@ namespace pr
     #define DECL_NODE(tag_name, name, members) \
         struct name ## _node : public ast_node \
         { \
-            name ## _node() : ast_node() { tag = tag_name; } \
+            name ## _node(token tok) : ast_node(tok) { tag = tag_name; } \
             members \
         };
     #include "nut/pr_ast_nodes.inc"
