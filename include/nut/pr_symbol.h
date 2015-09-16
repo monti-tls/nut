@@ -26,8 +26,9 @@
 //! pr_symbol
 //!
 
-//! This header defines a simple symbol structure, w/
-//!   name and flags.
+//! This header defines a 
+//! It is solely used when parsing,
+//!   to distinguish type identifiers from others.
 
 namespace pr
 {

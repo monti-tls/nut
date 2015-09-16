@@ -87,7 +87,7 @@ namespace pr
         token tok = parser_expect(par, TOKEN_IDENTIFIER);
         
         if (!parser_is_type_name(par, tok))
-            parser_parse_error(tok, "\"" + tok.value + "\" does not name a type");
+            parser_parse_error(par, tok, "\"" + tok.value + "\" does not name a type");
         
         // Create the AST node
         type_specifier_node* node = new type_specifier_node(tok);
@@ -273,12 +273,31 @@ namespace pr
         return function_decl(par);
     }
     
-    void parser_parse_error(token const& tok, std::string const& msg)
+    void parser_parse_error(parser& par, token const& tok, std::string const& msg)
     {
         std::ostringstream ss;
-        ss << "parse error: line " << tok.info.line;
-        ss << ", col " << tok.info.column << ": " << msg;
+        ss << "parse error: " << parser_token_information(tok) << msg << std::endl;
+        ss << parser_error_line(par, tok);
         throw std::logic_error(ss.str());
+    }
+    
+    std::string parser_token_information(token const& tok)
+    {
+        std::ostringstream ss;
+        ss << "line " << tok.info.line;
+        ss << ", col " << tok.info.column << ": ";
+        return ss.str();
+    }
+    
+    std::string parser_error_line(parser& par, token const& tok)
+    {
+        std::ostringstream ss;
+        ss << lexer_getline(par.lex, tok.info.line) << std::endl;
+        
+        for (int i = 0; i < tok.info.column-1; ++i)
+            ss << "~";
+        ss << "^";
+        return ss.str();
     }
     
     token parser_expect(parser& par, int type, std::string const& err_msg, bool eat)
@@ -295,7 +314,7 @@ namespace pr
         }
         
         if (lexer_peekt(par.lex) != type)
-            parser_parse_error(lexer_peek(par.lex), msg);
+            parser_parse_error(par, lexer_peek(par.lex), msg);
         
         return eat ? lexer_get(par.lex) : token();
     }
@@ -317,7 +336,7 @@ namespace pr
             else if (sym || glob_sym)
                 ss << "(`" << tok.value << "' is a builtin symbol)";
             
-            parser_parse_error(tok, ss.str());
+            parser_parse_error(par, tok, ss.str());
         }
     }
     

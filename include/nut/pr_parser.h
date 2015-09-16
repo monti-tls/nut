@@ -44,7 +44,7 @@
 //!   - for type errors, see pass_type_check.
 //!
 //! It also does NOT build a complete scope for the program, and local scopes are
-//!   destroyed during parsing. The complete scope tree is created by pass_create_scope_tree.
+//!   destroyed during parsing. The complete scope tree is created by pass_create_declarators.
 //!
 //! No semantic information is extracted during parsing, and all checking are done in later
 //!   passes (see sem_pass.h).
@@ -75,7 +75,18 @@ namespace pr
     //!
     
     //! Throw out an error, printing the message msg and location of the token tok.
-    void parser_parse_error(token const& tok, std::string const& msg);
+    void parser_parse_error(parser& par, token const& tok, std::string const& msg);
+    
+    //! Get an information string about the token location, in the format :
+    //! "line %line, col %column: "
+    std::string parser_token_information(token const& tok);
+    
+    //! Generate an line error information from the position in tok.
+    //! Format (abab... is the corresponding line of the input stream) :
+    //! abababababababababab
+    //! ~~~~~~~~~~~~~^
+    //! The caret is at tok.info.column.
+    std::string parser_error_line(parser& par, token const& tok);
     
     //! Check that the next token is of the given type.
     //! Throw an error if it is not the case.

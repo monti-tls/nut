@@ -20,7 +20,7 @@
 #include "nut/pr_context.h"
 #include "nut/pr_parser.h"
 #include "nut/pr_ast.h"
-#include "nut/sem_pass.h"
+#include "nut/sem_passman.h"
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -32,6 +32,7 @@
 int main()
 {
     using namespace pr;
+    using namespace sem;
     
     try
     {
@@ -40,18 +41,22 @@ int main()
         context ctx = context_create();
         lexer lex = lexer_create(fs, ctx);
         parser par = parser_create(lex, ctx);
+        passman pman = passman_create(par);
         
         ast_node* ast = parser_parse_program(par);
         
-        parser_free(par);
-        lexer_free(lex);
-        context_free(ctx);
-        
-        sem::call_check_pass(ast);
+        pass_fix_ast(pman, ast);
+        pass_create_declarators(pman, ast);
+        pass_check_calls(pman, ast);
         
         ast_pretty_print(ast);
         
         ast_free(ast);
+        
+        passman_free(pman);
+        parser_free(par);
+        lexer_free(lex);
+        context_free(ctx);
     }
     catch (std::exception const& exc)
     {

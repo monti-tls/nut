@@ -20,6 +20,19 @@
 
 namespace pr
 {
+    ast_node::ast_node(token const& tok)
+    {
+        saved_tok = tok;
+        self = this;
+        
+        parent = prev = next = 0;
+        decl = 0;
+    }
+    
+    ast_node::~ast_node()
+    { }
+    
+    //! Associates a node tag value to a name string.
     struct named_node
     {
         int tag;
@@ -85,6 +98,9 @@ namespace pr
     {
         for (unsigned int i = 0; i < root->children.size(); ++i)
             ast_free(root->children[i]);
+        
+        if (root->decl)
+            declarator_free(root->decl);
         
         delete root;
     }

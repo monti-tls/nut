@@ -44,13 +44,13 @@ namespace pr
         
         virtual ast_node* nud(parser& par)
         {
-            parser_parse_error(lexer_peek(par.lex), "nud BOGUS!");
+            parser_parse_error(par, lexer_peek(par.lex), "nud BOGUS!");
             return 0;
         }
         
         virtual ast_node* led(parser& par, ast_node*)
         {
-            parser_parse_error(lexer_peek(par.lex), "led BOGUS!");
+            parser_parse_error(par, lexer_peek(par.lex), "led BOGUS!");
             return 0;
         }
     };
@@ -99,7 +99,7 @@ namespace pr
             node->name = name;
             
             if (!scope_find(par.ctx.scp, name))
-                parser_parse_error(saved_tok, "use of undeclared identifier '" + name + "'");
+                parser_parse_error(par, saved_tok, "use of undeclared identifier '" + name + "'");
             
             return node;
         }
@@ -256,7 +256,7 @@ namespace pr
         tok = lexer_peek(par.lex);
         elem = find_expr_element_by_token(tok);
         if (!elem)
-            parser_parse_error(lexer_peek(par.lex), "expected expression");
+            parser_parse_error(par, lexer_peek(par.lex), "expected expression");
         
         // Eat the associated token and create the first ast node
         lexer_get(par.lex);

@@ -64,8 +64,12 @@ namespace pr
     //! Peek for the next token's type ahead in the stream.
     int lexer_peekt(lexer& lex);
     
-    //! Get the next token from the inptu stream.
+    //! Get the next token from the input stream.
     token lexer_get(lexer& lex);
+    
+    //! Get the n-th line of the input stream.
+    //! The lexing process is not affected.
+    std::string lexer_getline(lexer& lex, int n);
 }
 
 #endif // NUT_PR_LEXER_H

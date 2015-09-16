@@ -109,8 +109,8 @@ DECL_NODE(MEMBER_ACCESS_EXPR, member_access_expr,)
 
 //! An expression list node, in a linked-list fashion.
 //!
-//! [0] -> EXPRESSION
-//! [1] -> LIST_EXPR or 0 (next element in the list)
+//! [0] -> LIST_EXPR or EXPRESSION
+//! [1] -> EXPRESSION
 DECL_NODE(LIST_EXPR, list_expr,)
 
 ////////////////////////////////////////////////////////////////
@@ -120,7 +120,8 @@ DECL_NODE(LIST_EXPR, list_expr,)
 //! A variable declaration statement.
 //!
 //! name: name of the variable symbol.
-//! [0] -> EXPRESSION or 0 (initializer)
+//! [0] -> TYPE_SPECIFIER
+//! [1] -> EXPRESSION or 0 (initializer)
 DECL_NODE(DECLARATION_STMT, declaration_stmt,
           std::string name;)
 

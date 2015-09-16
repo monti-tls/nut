@@ -20,6 +20,7 @@
 #define NUT_PR_AST_H
 
 #include "nut/pr_token.h"
+#include "nut/sem_declarator.h"
 #include <string>
 #include <iostream>
 #include <vector>
@@ -56,17 +57,28 @@ namespace pr
     //! Ast node structure.
     struct ast_node
     {
-        ast_node(token tok)
-        {
-            saved_tok = tok;
-            self = this;
-        }
+        ast_node(token const& tok);
+        virtual ~ast_node();
         
         //! Tag enumeration for cast.
         int tag;
         
         //! Saved token, from which this node originates.
         token saved_tok;
+        
+        //! These pointers are init'ed to 0,
+        //!   and updated by the pass_fix_ast pass.
+        //! parent: the node's parent.
+        //! prev:   if the node is in a list (such as a statement block), a pointer
+        //!   to the previous element.
+        //! next:   same as above, pointing to the next node in the list.
+        ast_node* parent;
+        ast_node* prev;
+        ast_node* next;
+        
+        //! This is the declarator eventually associated to this node.
+        //! It is init'ed to 0, and eventually set by pass_create_declarators.
+        sem::declarator* decl;
         
         //! Children nodes vector.
         std::vector<ast_node*> children;

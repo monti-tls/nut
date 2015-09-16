@@ -419,4 +419,22 @@ namespace pr
         lex.next_token = lexer_get_token(lex);
         return tok;
     }
+    
+    std::string lexer_getline(lexer& lex, int n)
+    {
+        // Save current position and go to beginning of the stream
+        int saved = lex.in.tellg();
+        lex.in.clear();
+        lex.in.seekg(0, std::ios::beg);
+        
+        std::string line = "";
+        for (int i = 0; i < n; ++i)
+            std::getline(lex.in, line);
+        
+        // Restore saved position, clearing bad (or eof !) bits
+        lex.in.clear();
+        lex.in.seekg(saved, std::ios::beg);
+        
+        return line;
+    }
 }
