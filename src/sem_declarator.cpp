@@ -36,12 +36,12 @@ namespace sem
     /*** Public module API ***/
     /*************************/
     
-    type* type_create(std::string const& name)
+    type* type_create(std::string const& name, int flags)
     {
         type* tp = new type();
         tp->tag = TYPE_DECLARATOR;
         tp->name = name;
-        tp->flags = 0;
+        tp->flags = flags;
         return tp;
     }
     
@@ -68,12 +68,10 @@ namespace sem
         switch (decl->tag)
         {
             case VARIABLE_DECLARATOR:
-                declarator_free(decl->as_variable->tp);
                 break;
                 
             case FUNCTION_DECLARATOR:
             {
-                declarator_free(decl->as_function->ret_tp);
                 for (unsigned int i = 0; i < decl->as_function->arguments.size(); ++i)
                     declarator_free(decl->as_function->arguments[i]);
                 break;

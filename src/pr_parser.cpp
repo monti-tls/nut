@@ -182,15 +182,15 @@ namespace pr
         // If the next token is a type name identifier, this
         //   is a declaration
         token tok = lexer_peek(par.lex);
-        if (tok.type == TOKEN_IDENTIFIER)
+        if (tok.type == TOKEN_IDENTIFIER && parser_is_type_name(par, tok))
         {
-            if (parser_is_type_name(par, tok))
-                ast_add_child(node, declaration_stmt(par));
+            ast_add_child(node, declaration_stmt(par));
         }
         // Otherwise we expect an expression
         else
         {
             ast_add_child(node, pratt_expression(par));
+            parser_expect(par, TOKEN_SEMICOLON);
         }
         
         return node;
@@ -294,9 +294,10 @@ namespace pr
         std::ostringstream ss;
         ss << lexer_getline(par.lex, tok.info.line) << std::endl;
         
-        for (int i = 0; i < tok.info.column-1; ++i)
-            ss << "~";
+        for (int i = 0; i < tok.info.column-1; ++i) ss << " ";
         ss << "^";
+        for (int i = 0; i < ((int) tok.value.size())-1; ++i) ss << "~";
+        
         return ss.str();
     }
     

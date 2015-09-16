@@ -27,6 +27,7 @@ namespace pr
         
         parent = prev = next = 0;
         decl = 0;
+        res_tp = 0;
     }
     
     ast_node::~ast_node()
@@ -84,7 +85,7 @@ namespace pr
         named_node* name = ast_find_named_node(node->tag);
         
         if (name)
-            os << "(" << name->name << ")";
+            os << "(" << name->name << " -> " << (node->res_tp ? node->res_tp->name : "n/a") << ")";
         else
             os << "(bogus node)";
     }

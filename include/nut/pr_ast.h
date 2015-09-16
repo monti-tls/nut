@@ -79,6 +79,11 @@ namespace pr
         //! This is the declarator eventually associated to this node.
         //! It is init'ed to 0, and eventually set by pass_create_declarators.
         sem::declarator* decl;
+        //! The result type of the expression, if applicable (statements will get res_tp == 0
+        //!   for example).
+        //! It is updated by the pass_resolve_result_types.
+        //! It is NEVER deallocated (it should point to a node.decl declarator).
+        sem::type* res_tp;
         
         //! Children nodes vector.
         std::vector<ast_node*> children;

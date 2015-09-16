@@ -41,6 +41,11 @@ namespace sem
         pr::parser& par;
     };
     
+    //! Below are the semantic analyzer passes.
+    //! They are presented in order of execution.
+    //! Each pass assumes that the preceding ones have been ran,
+    //!   without sanity checks, so please be careful !
+    
     //! Create a pass manager object.
     passman passman_create(pr::parser& par);
     
@@ -58,6 +63,21 @@ namespace sem
     //!   - check if called object is a function
     //!   - check call arity
     void pass_check_calls(passman& pman, pr::ast_node* node);
+    
+    //! Generate the expression result type information.
+    //! It is located in node.res_tp.
+    //! This checks for :
+    //!   - invalid use of identifers (for ex types and function names
+    //!     are not allowed in arithmetic expressions)
+    //!   - type incompatibilities in expressions (void = int, float + int, ...)
+    void pass_resolve_result_types(passman& pman, pr::ast_node* node);
+    
+    //! Type-check pass.
+    //! It checks :
+    //!   - variables and arguments declared void (i.e. NONCOPYABLE)
+    //!   - variables initialized w/ incompatible type
+    //!   - function call arguments typing consistency
+    void pass_type_check(passman& pman, pr::ast_node* node);
 }
 
 #endif // NUT_SEM_PASSMAN_H

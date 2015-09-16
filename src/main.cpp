@@ -48,6 +48,8 @@ int main()
         pass_fix_ast(pman, ast);
         pass_create_declarators(pman, ast);
         pass_check_calls(pman, ast);
+        pass_resolve_result_types(pman, ast);
+        pass_type_check(pman, ast);
         
         ast_pretty_print(ast);
         

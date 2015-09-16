@@ -32,6 +32,48 @@ namespace sem
     passman::passman(pr::parser& par) : par(par)
     { }
     
+    //! Generate an (empty) table for the built-in types.
+    #define DECL_BUILTIN_TYPE(name, flags) { },
+    
+    type builtin_types[] = {
+        #include "nut/sem_builtins.inc"
+    };
+    
+    static int builtin_types_size = sizeof(builtin_types) / sizeof(type);
+    
+    #undef DECL_BUILTIN_TYPE
+    
+    //! Find a built-in type by name.
+    //! Returns 0 if not found.
+    static type* find_builtin_type(std::string const& name)
+    {
+        static bool inited = false;
+        if (!inited)
+        {
+            int i = 0;
+            type* tp;
+            
+            #define DECL_BUILTIN_TYPE(nm, fl) \
+                tp = builtin_types + i++; \
+                tp->tag = TYPE_DECLARATOR; \
+                tp->name = #nm; \
+                tp->self = tp; \
+                tp->flags = fl;
+            
+            #include "nut/sem_builtins.inc"
+            
+            #undef DECL_BUILTIN_TYPE
+            
+            inited = true;
+        }
+        
+        for (int i = 0; i < builtin_types_size; ++i)
+            if (builtin_types[i].name == name)
+                return builtin_types + i;
+        
+        return 0;
+    }
+    
     //! Emit a semantic error about a node.
     //! This throws an exception with the associated line and column.
     static void pass_error(passman& pman, ast_node* node, std::string const& msg)
@@ -48,6 +90,10 @@ namespace sem
     //! Returns 0 if not found.
     static declarator* resolve_declarator(std::string const& name, ast_node* node)
     {
+        type* builtin = find_builtin_type(name);
+        if (builtin)
+            return builtin;
+        
         if (!node)
             return 0;
         
@@ -118,7 +164,18 @@ namespace sem
                 
                 // Create a declarator with the appropriate name and type
                 variable* var = variable_create(stmt->name);
-                var->tp = type_create(stmt->children[0]->as_type_specifier->name);
+                var->tp = resolve_declarator(stmt->children[0]->as_type_specifier->name, stmt)->as_type;
+                
+                node->decl = var;
+                break;
+            }
+            
+            case ARGUMENT:
+            {
+                argument_node* arg = node->as_argument;
+                
+                variable* var = variable_create(arg->name);
+                var->tp = resolve_declarator(arg->children[0]->as_type_specifier->name, arg)->as_type;
                 
                 node->decl = var;
                 break;
@@ -133,7 +190,7 @@ namespace sem
                 
                 // Create a declarator with the appropriate name and type
                 function* fun = function_create(stmt->name);
-                fun->ret_tp = type_create(stmt_ret_tp->name);
+                fun->ret_tp = resolve_declarator(stmt_ret_tp->name, stmt)->as_type;
                 
                 // Create arguments specifications
                 for (unsigned int i = 0; i < stmt_args->children.size(); ++i)
@@ -141,7 +198,7 @@ namespace sem
                     argument_node* stmt_arg = stmt_args->children[i]->as_argument;
                     
                     variable* arg = variable_create(stmt_arg->name);
-                    arg->tp = type_create(stmt_arg->children[0]->as_type_specifier->name);
+                    arg->tp = resolve_declarator(stmt_arg->children[0]->as_type_specifier->name, stmt_arg)->as_type;
                     fun->arguments.push_back(arg);
                 }
                 
@@ -167,18 +224,18 @@ namespace sem
             // Get the associated declarator
             declarator* fun = resolve_declarator(name, node);
             
-            //! This is an internal error, because the parser already checks for
-            //!   uses of undeclared identifiers.
+            // This is an internal error, because the parser already checks for
+            //   uses of undeclared identifiers
             if (!fun) throw std::runtime_error("sem::pass_check_calls: internal error: declarator not found");
             
-            //! Check if the resolved object is a function.
+            // Check if the resolved object is a function
             if (fun->tag != FUNCTION_DECLARATOR)
                 pass_error(pman, node, "'" + name + "' is not a function");
             
-            //! Check the arity of the call.
+            // Number of arguments that the function expects
             int arity = fun->as_function->arguments.size();
             
-            //! Count the number of given arguments.
+            // Count the number of given arguments
             int call_arity = 0;
             if (node->children.size() > 1)
             {
@@ -193,6 +250,7 @@ namespace sem
                 }
             }
             
+            // Check the arity of the call
             if (call_arity != arity)
             {
                 std::ostringstream ss;
@@ -206,5 +264,150 @@ namespace sem
         
         for (unsigned int i = 0; i < node->children.size(); ++i)
             pass_check_calls(pman, node->children[i]);
+    }
+    
+    void pass_resolve_result_types(passman& pman, pr::ast_node* node)
+    {
+        switch (node->tag)
+        {
+            //! Trivial for literals.
+            case INTEGER_LITERAL_EXPR:
+                node->res_tp = find_builtin_type("int");
+                break;
+                
+            //! For identifiers, find the declarator and
+            //!   take the declared type.
+            case IDENTIFIER_EXPR:
+            {
+                declarator* decl = resolve_declarator(node->as_identifier_expr->name, node);
+                if (decl->tag != VARIABLE_DECLARATOR)
+                    pass_error(pman, node, "invalid use of identifier '" + node->as_identifier_expr->name + "'");
+                
+                node->res_tp = decl->as_variable->tp;
+                break;
+            }
+                
+            // For function calls, find the function declarator
+            //   and take its return type
+            case FUNCTION_CALL_EXPR:
+            {
+                // The declarator is guaranteed to be a function
+                declarator* decl = resolve_declarator(node->children[0]->as_identifier_expr->name, node);
+                if (!decl || decl->tag != FUNCTION_DECLARATOR)
+                    throw std::runtime_error("sem::pass_resolve_result_types: internal error: invalid call declarator");
+                
+                // Write out expression result's type
+                node->res_tp = decl->as_function->ret_tp;
+                
+                // Don't forget to generate type information for call expressions
+                pass_resolve_result_types(pman, node->children[1]);
+                break;
+            }
+            
+            //! Unary operators that results in the same type than
+            //!   their sub-expression.
+            case INC_EXPR:
+            case DEC_EXPR:
+            case NEG_EXPR:
+            case NOT_EXPR:
+            {
+                ast_node* sub_expr = node->children[0];
+                
+                pass_resolve_result_types(pman, sub_expr);
+                
+                node->res_tp = sub_expr->res_tp;
+                break;
+            }
+            
+            //! Binary operators that results in the same type than
+            //!   their sub-expression.
+            //! They require that the two operands be of the same type.
+            case ADD_EXPR:
+            case SUB_EXPR:
+            case MUL_EXPR:
+            case DIV_EXPR:
+            case ASSIGNMENT_EXPR:
+            {
+                // Resolve the left hand side sub-expression's result type
+                ast_node* sub_expr = node->children[0];
+                pass_resolve_result_types(pman, sub_expr);
+                type* lhs_res_tp = sub_expr->res_tp;
+                
+                // Resolve the right hand side sub-expression's result type
+                sub_expr = node->children[1];
+                pass_resolve_result_types(pman, sub_expr);
+                type* rhs_res_tp = sub_expr->res_tp;
+                
+                // Check for compatibility
+                if (lhs_res_tp->name != rhs_res_tp->name)
+                {
+                    std::ostringstream ss;
+                    ss << "operation between incompatible types '";
+                    ss << lhs_res_tp->name << "' and '";
+                    ss << rhs_res_tp->name << "'";
+                    pass_error(pman, node, ss.str());
+                }
+                
+                node->res_tp = lhs_res_tp;
+            }
+            
+            default:
+                for (unsigned int i = 0; i < node->children.size(); ++i)
+                    pass_resolve_result_types(pman, node->children[i]);
+        }
+    }
+    
+    void pass_type_check(passman& pman, pr::ast_node* node)
+    {
+        switch (node->tag)
+        {
+            case DECLARATION_STMT:
+            case ARGUMENT:
+            {
+                type* decl_tp = node->decl->as_variable->tp;
+                
+                // Check for void variable declarations
+                if (decl_tp->flags & TYPE_FLAG_NONCOPYABLE)
+                    pass_error(pman, node, "variable '" + node->as_declaration_stmt->name + "' declared void");
+                
+                // If there is an initialization, check for type incompatibility
+                if (node->children.size() > 1)
+                {
+                    type* init_tp = node->children[1]->res_tp;
+                    if (decl_tp->name != init_tp->name)
+                        pass_error(pman, node, "initializing variable with incompatible type '" +  init_tp->name + "'");
+                    
+                    // Recurse the call in the expression
+                    pass_type_check(pman, node->children[1]);
+                }
+                break;
+            }
+            
+            case FUNCTION_CALL_EXPR:
+            {
+                // The declarator is guaranteed to be a function
+                // Because other passes checked this up (as well as children[0]
+                //   being an identifier_expr_node)
+                std::string name = node->children[0]->as_identifier_expr->name;
+                function* fun = resolve_declarator(name, node)->as_function;
+                
+                // It is guaranteed that the argument count matches the function declarator
+                for (int i = 0; i < (int) fun->arguments.size(); ++i)
+                {
+                    ast_node* arg = node->children[1]->children[i];
+                    type* decl_tp = fun->arguments[i]->tp;
+                    type* res_tp = arg->res_tp;
+                    
+                    if (decl_tp->name != res_tp->name)
+                        pass_error(pman, arg, "initializing parameter with incompatible type '" + res_tp->name + "'");
+                }
+                
+                break;
+            }
+            
+            default:
+                for (unsigned int i = 0; i < node->children.size(); ++i)
+                    pass_type_check(pman, node->children[i]);
+        }
     }
 }

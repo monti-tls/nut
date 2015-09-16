@@ -31,14 +31,9 @@ namespace pr
         symbol sym;
         sym.flags = SYM_FLAG_TYPE | SYM_FLAG_BUILTIN;
         
-        //! This macro just helps for readability.
-        #define EXPOSE(tp) sym.name = tp; scope_add(ctx.scp, sym);
-        
-        EXPOSE("char")
-        EXPOSE("int")
-        EXPOSE("float")
-        
-        #undef EXPOSE
+        #define DECL_BUILTIN_TYPE(nm, flags) sym.name = #nm; scope_add(ctx.scp, sym);
+        #include "nut/sem_builtins.inc"
+        #undef DECL_BUILTIN_TYPE
     }
     
     /*************************/

@@ -64,9 +64,13 @@ namespace sem
     };
     
     //! Type flags.
+    //!
+    //! NONCOPYABLE: void-like type
     enum
     {
-        TYPE_NONCOPYABLE = 0x0001
+        TYPE_FLAG_NONCOPYABLE = 0x0001,
+        
+        TYPE_FLAG_NONE        = 0x0000
     };
     
     //! A type declarator.
@@ -78,18 +82,18 @@ namespace sem
     //! A variable declarator.
     struct variable : public declarator
     {
-        type* tp;
+        type* tp; //! this is not freed when declarator is destroyed.
     };
     
     //! A function declarator.
     struct function : public declarator
     {
-        type* ret_tp;
+        type* ret_tp; //! this is not freed when declarator is destroyed.
         std::vector<variable*> arguments;
     };
     
     //! Create a new type declarator.
-    type* type_create(std::string const& name);
+    type* type_create(std::string const& name, int flags = 0);
     
     //! Create a new variable declarator.
     variable* variable_create(std::string const& name);
