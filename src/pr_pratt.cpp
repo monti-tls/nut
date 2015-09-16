@@ -22,6 +22,9 @@
     
 namespace pr
 {
+    //! Forward declaration.
+    static ast_node* pratt_expression(parser& par, int rbp = 0);
+    
     /***************************************/
     /*** Default implementation (throws) ***/
     /***************************************/
@@ -243,11 +246,10 @@ namespace pr
         return 0;
     }
     
-    /*************************/
-    /*** Public module API ***/
-    /*************************/
-    
-    ast_node* pratt_expression(parser& par, int rbp)
+    //! This function is internally recursively called by led and
+    //!   nud handlers.
+    //! It implements the Pratt parser loop.
+    static ast_node* pratt_expression(parser& par, int rbp)
     {
         token tok;
         expr_element* elem;
@@ -285,5 +287,19 @@ namespace pr
         }
         
         return left;
+    }
+    
+    /*************************/
+    /*** Public module API ***/
+    /*************************/
+    
+    ast_node* expression(parser& par)
+    {
+        ast_node* expr = pratt_expression(par);
+        
+        expression_node* wrap = new expression_node(expr->saved_tok);
+        ast_add_child(wrap, expr);
+        
+        return wrap;
     }
 }

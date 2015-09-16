@@ -85,7 +85,7 @@ namespace pr
         named_node* name = ast_find_named_node(node->tag);
         
         if (name)
-            os << "(" << name->name << " -> " << (node->res_tp ? node->res_tp->name : "n/a") << ")";
+            os << "(" << name->name << ")";
         else
             os << "(bogus node)";
     }

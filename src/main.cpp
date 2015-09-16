@@ -50,6 +50,7 @@ int main()
         pass_check_calls(pman, ast);
         pass_resolve_result_types(pman, ast);
         pass_type_check(pman, ast);
+        pass_unused_expression_results(pman, ast);
         
         ast_pretty_print(ast);
         

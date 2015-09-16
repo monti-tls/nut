@@ -42,7 +42,8 @@
 namespace pr
 {
     //! Parse an expression.
-    ast_node* pratt_expression(parser&, int rbp = 0);
+    //! This wraps the expression tree into an EXPRESSION node.
+    ast_node* expression(parser& par);
 }
 
 #endif // NUT_PR_PRATT_H

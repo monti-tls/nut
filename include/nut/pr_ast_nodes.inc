@@ -97,21 +97,28 @@ DECL_NODE(ASSIGNMENT_EXPR, assignment_expr,)
 
 //! A function call expression.
 //!
-//! [0] -> EXPRESSION (function symbol)
+//! [0] -> *_EXPR (function symbol)
 //! [1] -> LIST_EXPR  (argument values)
 DECL_NODE(FUNCTION_CALL_EXPR, function_call_expr,)
 
 //! A member access expression.
 //!
-//! [0] -> EXPRESSION (struct symbol)
-//! [1] -> EXPRESSION (member symbol)
+//! [0] -> *_EXPR (struct symbol)
+//! [1] -> *_EXPR (member symbol)
 DECL_NODE(MEMBER_ACCESS_EXPR, member_access_expr,)
 
 //! An expression list node, in a linked-list fashion.
 //!
-//! [0] -> LIST_EXPR or EXPRESSION
-//! [1] -> EXPRESSION
+//! [0] -> LIST_EXPR or *_EXPR
+//! [1] -> *_EXPR
 DECL_NODE(LIST_EXPR, list_expr,)
+
+//! A node to wrap expressions.
+//! It is only used to easily distinguish between
+//!   statements and expressions.
+//!
+//! [0] -> *_EXPR
+DECL_NODE(EXPRESSION, expression,)
 
 ////////////////////////////////////////////////////////////////
 //////////////// Statement nodes ///////////////////////////////

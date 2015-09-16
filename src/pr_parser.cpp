@@ -139,7 +139,7 @@ namespace pr
     
     //! A variable declaration statement.
     //!
-    //! declaration_stmt := type_specifier IDENTIFIER (EQUALS pratt_expression)? SEMICOLON
+    //! declaration_stmt := type_specifier IDENTIFIER (EQUALS expression)? SEMICOLON
     static ast_node* declaration_stmt(parser& par)
     {
         declaration_stmt_node* node = new declaration_stmt_node(lexer_peek(par.lex));
@@ -163,7 +163,7 @@ namespace pr
         if (lexer_peekt(par.lex) == TOKEN_EQUALS)
         {
             lexer_get(par.lex);
-            ast_add_child(node, pratt_expression(par));
+            ast_add_child(node, expression(par));
         }
         
         parser_expect(par, TOKEN_SEMICOLON);
@@ -174,7 +174,7 @@ namespace pr
     //! A single statement, terminated with a semicolon.
     //!
     //! statement := declaration_stmt
-    //!            | pratt_expression
+    //!            | expression
     static ast_node* statement(parser& par)
     {
         statement_node* node = new statement_node(lexer_peek(par.lex));
@@ -189,7 +189,7 @@ namespace pr
         // Otherwise we expect an expression
         else
         {
-            ast_add_child(node, pratt_expression(par));
+            ast_add_child(node, expression(par));
             parser_expect(par, TOKEN_SEMICOLON);
         }
         

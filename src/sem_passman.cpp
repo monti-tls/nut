@@ -20,6 +20,7 @@
 #include "nut/sem_declarator.h"
 #include <sstream>
 #include <stdexcept>
+#include <iostream> // for std::cerr
 
 namespace sem
 {
@@ -82,6 +83,17 @@ namespace sem
         ss << "semantic error: " << parser_token_information(node->saved_tok) << msg << std::endl;
         ss << parser_error_line(pman.par, node->saved_tok);
         throw std::logic_error(ss.str());
+    }
+    
+    //! Emit a semantic warning about a node.
+    //! This prints to stderr with the associated line and column.
+    static void pass_warning(passman& pman, ast_node* node, std::string const& msg)
+    {
+        std::ostringstream ss;
+        ss << "warning: " << parser_token_information(node->saved_tok) << msg << std::endl;
+        ss << parser_error_line(pman.par, node->saved_tok);
+        
+        std::cerr << ss.str() << std::endl;
     }
     
     //! Resolve a declarator by name in the AST.
@@ -270,6 +282,12 @@ namespace sem
     {
         switch (node->tag)
         {
+            //! The expression node is just a wrapper.
+            case EXPRESSION:
+                pass_resolve_result_types(pman, node->children[0]);
+                node->res_tp = node->children[0]->res_tp;
+                break;
+            
             //! Trivial for literals.
             case INTEGER_LITERAL_EXPR:
                 node->res_tp = find_builtin_type("int");
@@ -386,7 +404,7 @@ namespace sem
             case FUNCTION_CALL_EXPR:
             {
                 // The declarator is guaranteed to be a function
-                // Because other passes checked this up (as well as children[0]
+                //   because other passes checked this up (as well for children[0]
                 //   being an identifier_expr_node)
                 std::string name = node->children[0]->as_identifier_expr->name;
                 function* fun = resolve_declarator(name, node)->as_function;
@@ -409,5 +427,37 @@ namespace sem
                 for (unsigned int i = 0; i < node->children.size(); ++i)
                     pass_type_check(pman, node->children[i]);
         }
+    }
+    
+    void pass_unused_expression_results(passman& pman, pr::ast_node* node)
+    {
+        //! Here we search for simple expression statements (including function
+        //!   calls).
+        if (node->tag == STATEMENT)
+        {
+            ast_node* expr = node->children[0];
+            
+            if (expr->tag == EXPRESSION)
+            {
+                bool warn = false;
+                
+                if (expr->children[0]->tag == FUNCTION_CALL_EXPR)
+                {
+                    identifier_expr_node* id = expr->children[0]->children[0]->as_identifier_expr;
+                    // This is guaranteed to success
+                    function* fun = resolve_declarator(id->name, node)->as_function;
+                    
+                    // If the function returns a void result
+                    if (fun->ret_tp->flags & TYPE_FLAG_NONCOPYABLE)
+                        warn = true;
+                }
+                
+                if (!warn)
+                    pass_warning(pman, expr, "unused expression result");
+            }
+        }
+        
+        for (unsigned int i = 0; i < node->children.size(); ++i)
+            pass_unused_expression_results(pman, node->children[i]);
     }
 }
