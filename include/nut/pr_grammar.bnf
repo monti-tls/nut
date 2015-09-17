@@ -46,3 +46,5 @@ statement_block    := LEFT_CURLY statement* RIGHT_CURLY
 function_decl      := type_specifier IDENTIFIER
                       LEFT_PAREN argument_list RIGHT_PAREN
                       statement_block
+
+program_decl       := function_decl+ EOF

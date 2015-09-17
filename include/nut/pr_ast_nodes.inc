@@ -132,6 +132,11 @@ DECL_NODE(EXPRESSION, expression,)
 DECL_NODE(DECLARATION_STMT, declaration_stmt,
           std::string name;)
 
+//! A return statement.
+//!
+//! [0] -> EXPRESSION or 0
+DECL_NODE(RETURN_STMT, return_stmt,)
+          
 //! A generic statement.
 //!
 //! [0] -> EXPRESSION or *_STMT
@@ -154,3 +159,8 @@ DECL_NODE(STATEMENT_BLOCK, statement_block,)
 //! [2] -> STATEMENT_BLOCK
 DECL_NODE(FUNCTION_DECL, function_decl,
           std::string name;)
+
+//! A program declaration.
+//!
+//! [i] -> FUNCTION_DECL
+DECL_NODE(PROGRAM_DECL, program_decl,)

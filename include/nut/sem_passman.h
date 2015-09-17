@@ -77,11 +77,16 @@ namespace sem
     //!   - variables and arguments declared void (i.e. NONCOPYABLE)
     //!   - variables initialized w/ incompatible type
     //!   - function call arguments typing consistency
+    //!   - return value type consistency
     void pass_type_check(passman& pman, pr::ast_node* node);
     
     //! This pass checks for unused expression results
     //!   and emit warnings.
     void pass_unused_expression_results(passman& pman, pr::ast_node* node);
+    
+    //! This pass checks for unreachable code
+    //!   and emit warnings.
+    void pass_unreachable_code(passman& pman, pr::ast_node* node);
 }
 
 #endif // NUT_SEM_PASSMAN_H

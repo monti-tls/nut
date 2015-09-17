@@ -78,6 +78,7 @@ namespace pr
     static ast_node* statement_block(parser&);
     //! Top-level declarators.
     static ast_node* function_decl(parser&);
+    static ast_node* program_decl(parser&);
     
     //! A type specifier.
     //!
@@ -171,9 +172,28 @@ namespace pr
         return node;
     }
     
+    //! A return statement.
+    //!
+    //! return_stmt := RETURN expression? SEMICOLON
+    static ast_node* return_stmt(parser& par)
+    {
+        return_stmt_node* node = new return_stmt_node(lexer_peek(par.lex));
+        
+        parser_expect(par, TOKEN_RETURN);
+        
+        // Read in the eventual expression
+        if (lexer_peekt(par.lex) != TOKEN_SEMICOLON)
+            ast_add_child(node, expression(par));
+        
+        parser_expect(par, TOKEN_SEMICOLON);
+        
+        return node;
+    }
+    
     //! A single statement, terminated with a semicolon.
     //!
     //! statement := declaration_stmt
+    //!            | return _stmt
     //!            | expression
     static ast_node* statement(parser& par)
     {
@@ -182,9 +202,16 @@ namespace pr
         // If the next token is a type name identifier, this
         //   is a declaration
         token tok = lexer_peek(par.lex);
+        
+        // Declaration
         if (tok.type == TOKEN_IDENTIFIER && parser_is_type_name(par, tok))
         {
             ast_add_child(node, declaration_stmt(par));
+        }
+        // Return statement
+        else if (tok.type == TOKEN_RETURN)
+        {
+            ast_add_child(node, return_stmt(par));
         }
         // Otherwise we expect an expression
         else
@@ -249,8 +276,22 @@ namespace pr
         ast_add_child(node, statement_block(par));
         
         // Pop the function scope
-        //FIXME: save the layer in the function representation in the AST
         scope_pop(par.ctx.scp);
+        
+        return node;
+    }
+    
+    //! A program declaration.
+    //! 
+    //! program_decl := function_decl+ EOF
+    static ast_node* program_decl(parser& par)
+    {
+        program_decl_node* node = new program_decl_node(lexer_peek(par.lex));
+        
+        do
+        {
+            ast_add_child(node, function_decl(par));
+        } while (lexer_peekt(par.lex) != TOKEN_EOF);
         
         return node;
     }
@@ -270,7 +311,7 @@ namespace pr
     
     ast_node* parser_parse_program(parser& par)
     {
-        return function_decl(par);
+        return program_decl(par);
     }
     
     void parser_parse_error(parser& par, token const& tok, std::string const& msg)

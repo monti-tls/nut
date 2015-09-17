@@ -51,6 +51,7 @@ int main()
         pass_resolve_result_types(pman, ast);
         pass_type_check(pman, ast);
         pass_unused_expression_results(pman, ast);
+        pass_unreachable_code(pman, ast);
         
         ast_pretty_print(ast);
         

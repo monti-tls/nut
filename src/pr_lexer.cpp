@@ -214,17 +214,46 @@ namespace pr
     {
         lexer_skip_ws(lex);
         
-        while (lex.next_char == '#')
+        while (lex.next_char == '/')
         {
-            while (lex.next_char != '\n')
+            if (lex.in.peek() == '/')
             {
-                lexer_get_char(lex);
-                // Pay attention to EOF
-                if (lex.next_char < 0) return;
+                while (lex.next_char != '\n')
+                {
+                    lexer_get_char(lex);
+                    // Pay attention to EOF
+                    if (lex.next_char < 0) break;
+                }
             }
+            else if (lex.in.peek() == '*')
+            {
+                // Get the '/*'
+                lexer_get_char(lex);
+                lexer_get_char(lex);
+                
+                for (;;)
+                {   
+                    if (lex.next_char == '*' && lex.in.peek() == '/')
+                    {
+                        // Get the '*/'
+                        lexer_get_char(lex);
+                        lexer_get_char(lex);
+                        break;
+                    }
+                    // Pay attention to EOF
+                    else if (lex.next_char < 0)
+                        break;
+                    
+                    lexer_get_char(lex);
+                }
+            }
+            else break;
             
+            // To see another eventual comment
             lexer_skip_ws(lex);
         }
+        
+        lexer_skip_ws(lex);
     }
     
     //! Skip unwanted input.

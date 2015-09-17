@@ -96,10 +96,30 @@ namespace sem
         std::cerr << ss.str() << std::endl;
     }
     
+    //! Resolve a declarator in the node's subtree.
+    //! Returns 0 if not found.
+    static declarator* resolve_inner_declarator(std::string const& name, ast_node* node)
+    {
+        if (node->decl && node->decl->name == name)
+            return node->decl;
+        
+        for (unsigned int i = 0; i < node->children.size(); ++i)
+        {
+            declarator* decl = resolve_inner_declarator(name, node->children[i]);
+            if (decl)
+                return decl;
+        }
+        
+        return 0;
+    }
+    
     //! Resolve a declarator by name in the AST.
     //! Returns the first declarator whose name is matching
     //!   regardless of its type.
     //! Returns 0 if not found.
+    //WARNING: this has exponential run time in AST depth
+    //         because it calls resolve_inner_declarator on each node, then on node->parent
+    //         so each tree is examined multiple times :/
     static declarator* resolve_declarator(std::string const& name, ast_node* node)
     {
         type* builtin = find_builtin_type(name);
@@ -112,8 +132,9 @@ namespace sem
         // Search in previous nodes (including this one)
         for (ast_node* it = node; it; it = it->prev)
         {
-            if (it->decl && it->decl->name == name)
-                return it->decl;
+            declarator* decl = resolve_inner_declarator(name, it);
+            if (decl)
+                return decl;
         }
         
         // If it is a function, also search in its arguments
@@ -129,6 +150,18 @@ namespace sem
         
         // Search in the node's parent, if null returns 0
         return resolve_declarator(name, node->parent);
+    }
+    
+    //! Resolve the current function declarator.
+    static function* resolve_function_declarator(ast_node* node)
+    {
+        if (!node)
+            return 0;
+        
+        if (node->decl && node->decl->tag == FUNCTION_DECLARATOR)
+            return node->decl->as_function;
+        
+        return resolve_function_declarator(node->parent);
     }
     
     /*************************/
@@ -195,7 +228,7 @@ namespace sem
             
             case FUNCTION_DECL:
             {
-                // Some casted helped pointers
+                // Some casted helper pointers
                 function_decl_node* stmt = node->as_function_decl;
                 type_specifier_node* stmt_ret_tp = stmt->children[0]->as_type_specifier;
                 argument_list_node* stmt_args = stmt->children[1]->as_argument_list;
@@ -298,6 +331,8 @@ namespace sem
             case IDENTIFIER_EXPR:
             {
                 declarator* decl = resolve_declarator(node->as_identifier_expr->name, node);
+                if (!decl) throw std::runtime_error("sem::pass_resolve_result_types: internal error: null declarator");
+                
                 if (decl->tag != VARIABLE_DECLARATOR)
                     pass_error(pman, node, "invalid use of identifier '" + node->as_identifier_expr->name + "'");
                 
@@ -423,6 +458,29 @@ namespace sem
                 break;
             }
             
+            case RETURN_STMT:
+            {
+                function* fun = resolve_function_declarator(node);
+                if (!fun) throw std::runtime_error("sem::pass_type_check: internal error: null function declarator");
+                
+                type* tp;
+                if (!node->children.size())
+                    tp = find_builtin_type("void");
+                else
+                    tp = node->children[0]->res_tp;
+                
+                if (tp->name != fun->ret_tp->name)
+                {
+                    if (tp->flags & TYPE_FLAG_NONCOPYABLE)
+                        pass_error(pman, node, "this function expects a return value");
+                    else if (fun->ret_tp->flags & TYPE_FLAG_NONCOPYABLE)
+                        pass_error(pman, node, "this function does not expects a return value");
+                    else
+                        pass_error(pman, node, "returning with incompatible type '" + tp->name + "'");
+                }
+                break;
+            }
+            
             default:
                 for (unsigned int i = 0; i < node->children.size(); ++i)
                     pass_type_check(pman, node->children[i]);
@@ -459,5 +517,16 @@ namespace sem
         
         for (unsigned int i = 0; i < node->children.size(); ++i)
             pass_unused_expression_results(pman, node->children[i]);
+    }
+    
+    void pass_unreachable_code(passman& pman, pr::ast_node* node)
+    {
+        // node->parent is a STATEMENT node wrapper,
+        //   so if node->parent->next != 0, there is another statement after this one
+        if (node->tag == RETURN_STMT && node->parent->next)
+            pass_warning(pman, node, "code is unreachable after this return statement");
+        
+        for (unsigned int i = 0; i < node->children.size(); ++i)
+            pass_unreachable_code(pman, node->children[i]);
     }
 }
