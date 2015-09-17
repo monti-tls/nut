@@ -177,6 +177,17 @@ namespace sem
     void passman_free(passman&)
     { }
     
+    void passman_run_all(passman& pman, pr::ast_node* node)
+    {
+        pass_fix_ast(pman, node);
+        pass_create_declarators(pman, node);
+        pass_check_calls(pman, node);
+        pass_resolve_result_types(pman, node);
+        pass_type_check(pman, node);
+        pass_unused_expression_results(pman, node);
+        pass_unreachable_code(pman, node);
+    }
+    
     void pass_fix_ast(passman& pman, ast_node* node)
     {
         int n = (int) node->children.size();

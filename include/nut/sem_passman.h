@@ -52,6 +52,9 @@ namespace sem
     //! Free a pass manager object.
     void passman_free(passman& pman);
     
+    //! Run all passes (in order) on the given AST.
+    void passman_run_all(passman& pman, pr::ast_node* node);
+    
     //! Fix the AST parent, prev and next pointers.
     void pass_fix_ast(passman& pman, pr::ast_node* node);
     

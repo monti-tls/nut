@@ -45,13 +45,7 @@ int main()
         
         ast_node* ast = parser_parse_program(par);
         
-        pass_fix_ast(pman, ast);
-        pass_create_declarators(pman, ast);
-        pass_check_calls(pman, ast);
-        pass_resolve_result_types(pman, ast);
-        pass_type_check(pman, ast);
-        pass_unused_expression_results(pman, ast);
-        pass_unreachable_code(pman, ast);
+        passman_run_all(pman, ast);
         
         ast_pretty_print(ast);
         
